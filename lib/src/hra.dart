@@ -1257,7 +1257,7 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
                   // LEVEL
 
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 30),
 
                   Container(
 
