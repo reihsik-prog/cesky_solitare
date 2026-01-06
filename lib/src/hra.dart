@@ -1,3 +1,4 @@
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -61,12 +62,14 @@ class _SlovniSolitareState extends State<SlovniSolitare>
   List<List<KartaData>> skryteBalicky = List.generate(4, (_) => []);
 
   List<int> idsKategoriiProCile = [];
+  List<GlobalKey> _cilKeys = [];
 
 
 
   final Random _rnd = Random();
 
-  List<Widget> efekty = [];
+  late ConfettiController _confettiController;
+  Offset? _confettiPozice;
 
   List<SkakajiciKarta> kaskada = [];
 
@@ -123,7 +126,8 @@ class _SlovniSolitareState extends State<SlovniSolitare>
   void initState() {
 
     super.initState();
-
+    _confettiController =
+        ConfettiController(duration: const Duration(seconds: 1));
     _lizaciController = AnimationController(
 
         vsync: this, duration: const Duration(milliseconds: 400));
@@ -173,7 +177,7 @@ class _SlovniSolitareState extends State<SlovniSolitare>
     _lizaciController?.dispose();
 
     _kaskadaTicker?.dispose();
-
+    _confettiController.dispose();
     super.dispose();
 
   }
@@ -268,13 +272,15 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
       var cileRaw = jsonDecode(prefs.getString('cile') ?? "[]") as List;
 
-      cile = cileRaw
+            cile = cileRaw
 
-          .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
+                .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
 
-          .toList();
+                .toList();
 
-      var sloupceRaw = jsonDecode(prefs.getString('sloupce') ?? "[]") as List;
+            _cilKeys = List.generate(cile.length, (_) => GlobalKey());
+
+            var sloupceRaw = jsonDecode(prefs.getString('sloupce') ?? "[]") as List;
 
       sloupce = sloupceRaw
 
@@ -366,9 +372,15 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
 
 
-      cile = List.generate(unikatniIds.length, (_) => <KartaData>[]);
+            cile = List.generate(unikatniIds.length, (_) => <KartaData>[]);
 
-      sloupce = List.generate(pocetSloupcu, (_) => []);
+
+
+            _cilKeys = List.generate(unikatniIds.length, (_) => GlobalKey());
+
+
+
+            sloupce = List.generate(pocetSloupcu, (_) => []);
 
       skryteBalicky = List.generate(pocetSloupcu, (_) => []);
 
@@ -589,71 +601,10 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
 
   void vybuchni(Offset pozice) {
-
-    for (int i = 0; i < 35; i++) {
-
-      final double angle = _rnd.nextDouble() * 2 * pi;
-
-      final double dist = 80.0 + _rnd.nextDouble() * 120.0;
-
-      final color = [
-
-        Colors.amber[100],
-
-        Colors.white,
-
-        Colors.orange[300],
-
-        Colors.amber[400]
-
-      ][_rnd.nextInt(4)];
-
-      setState(() {
-
-        efekty.add(Positioned(
-
-            left: pozice.dx,
-
-            top: pozice.dy,
-
-            child: TweenAnimationBuilder(
-
-                tween: Tween(begin: 0.0, end: 1.0),
-
-                duration: const Duration(milliseconds: 900),
-
-                builder: (c, double v, child) => Opacity(
-
-                    opacity: 1.0 - (v * v),
-
-                    child: Transform.translate(
-
-                        offset:
-
-                            Offset(cos(angle) * dist * v, sin(angle) * dist * v),
-
-                        child: Transform.rotate(angle: v * 4, child: child))),
-
-                child: Container(
-
-                    width: 8,
-
-                    height: 8,
-
-                    decoration: BoxDecoration(
-
-                        color: color,
-
-                        borderRadius: BorderRadius.circular(2))))));
-
-      });
-
-    }
-
-    Future.delayed(const Duration(milliseconds: 1000),
-
-        () => setState(() => efekty.clear()));
-
+    setState(() {
+      _confettiPozice = pozice;
+    });
+    _confettiController.play();
   }
 
 
@@ -700,135 +651,271 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
 
 
-  void presun(Map data, String kam, int ci, BuildContext context) async {
-
-    if (rozdavam) return;
-
-    if (jeKonecHryProhra) return;
-
-    setState(() => _tahanaPozice = null);
+    void presun(Map data, String kam, int ci) async {
 
 
 
-    if (data['t'] == kam && data['i'] == ci) return;
-
-    List<KartaData> tahaneKarty = List<KartaData>.from(data['karty']);
-
-    KartaData prvni = tahaneKarty.first;
+      if (rozdavam) return;
 
 
 
-    bool muze = (kam == "cil")
-
-        ? (cile[ci].isEmpty
-
-            ? prvni.jeHlavni
-
-            : (prvni.kategorieId == cile[ci].first.kategorieId &&
-
-                !prvni.jeHlavni))
-
-        : (sloupce[ci].isEmpty ||
-
-            (prvni.kategorieId == sloupce[ci].last.kategorieId &&
-
-                !sloupce[ci].last.jeHlavni));
+      if (jeKonecHryProhra) return;
 
 
 
-    if (!muze) {
+      setState(() => _tahanaPozice = null);
 
-      setState(() => skore = max(0, skore - 5));
 
-      if (vibraceZapnute) HapticFeedback.heavyImpact();
 
-      return;
+  
+
+
+
+      if (data['t'] == kam && data['i'] == ci) return;
+
+
+
+      List<KartaData> tahaneKarty = List<KartaData>.from(data['karty']);
+
+
+
+      KartaData prvni = tahaneKarty.first;
+
+
+
+  
+
+
+
+      bool muze = (kam == "cil")
+
+
+
+          ? (cile[ci].isEmpty
+
+
+
+              ? prvni.jeHlavni
+
+
+
+              : (prvni.kategorieId == cile[ci].first.kategorieId &&
+
+
+
+                  !prvni.jeHlavni))
+
+
+
+          : (sloupce[ci].isEmpty ||
+
+
+
+              (prvni.kategorieId == sloupce[ci].last.kategorieId &&
+
+
+
+                  !sloupce[ci].last.jeHlavni));
+
+
+
+  
+
+
+
+      if (!muze) {
+
+
+
+        setState(() => skore = max(0, skore - 5));
+
+
+
+        if (vibraceZapnute) HapticFeedback.heavyImpact();
+
+
+
+        return;
+
+
+
+      }
+
+
+
+  
+
+
+
+      setState(() {
+
+
+
+        pocetTahu++;
+
+
+
+        if (kam != "cil" || !prvni.jeHlavni) skore += 10;
+
+
+
+  
+
+
+
+        if (data['t'] == "odpad") {
+
+
+
+          odpad.removeLast();
+
+
+
+        } else if (data['t'] == "sloupec") {
+
+
+
+          int odkudIdx = data['i'];
+
+
+
+          sloupce[odkudIdx].removeRange(
+
+
+
+              sloupce[odkudIdx].length - tahaneKarty.length,
+
+
+
+              sloupce[odkudIdx].length);
+
+
+
+          if (sloupce[odkudIdx].isEmpty && skryteBalicky[odkudIdx].isNotEmpty) {
+
+
+
+            sloupce[odkudIdx].add(skryteBalicky[odkudIdx].removeLast());
+
+
+
+          }
+
+
+
+        }
+
+
+
+  
+
+
+
+        if (kam == "sloupec") sloupce[ci].addAll(tahaneKarty);
+
+
+
+        if (kam == "cil") {
+
+
+
+          cile[ci].addAll(tahaneKarty);
+
+
+
+          if (cile[ci].length == celkemVKategorii(prvni.kategorieId)) {
+
+
+
+            final RenderBox box =
+
+
+
+                _cilKeys[ci].currentContext!.findRenderObject() as RenderBox;
+
+
+
+            vybuchni(box.localToGlobal(Offset.zero) +
+
+
+
+                Offset(box.size.width / 2, box.size.height / 2));
+
+
+
+  
+
+
+
+            Future.delayed(const Duration(milliseconds: 500), () {
+
+
+
+              if (mounted) {
+
+
+
+                setState(() {
+
+
+
+                  archiv.addAll(cile[ci]);
+
+
+
+                  cile[ci].clear();
+
+
+
+                  if (archiv.length ==
+
+
+
+                      seznamLevelu[aktualniLevelIndex].karty.length) {
+
+
+
+                    _startKaskada();
+
+
+
+                  }
+
+
+
+                });
+
+
+
+              }
+
+
+
+            });
+
+
+
+          }
+
+
+
+        }
+
+
+
+      });
+
+
+
+      ulozHru();
+
+
+
+      zkontrolujProhru();
+
+
 
     }
-
-
-
-    setState(() {
-
-      pocetTahu++;
-
-      if (kam != "cil" || !prvni.jeHlavni) skore += 10;
-
-
-
-      if (data['t'] == "odpad") {
-
-        odpad.removeLast();
-
-      } else if (data['t'] == "sloupec") {
-
-        int odkudIdx = data['i'];
-
-        sloupce[odkudIdx].removeRange(
-
-            sloupce[odkudIdx].length - tahaneKarty.length,
-
-            sloupce[odkudIdx].length);
-
-        if (sloupce[odkudIdx].isEmpty && skryteBalicky[odkudIdx].isNotEmpty) {
-
-          sloupce[odkudIdx].add(skryteBalicky[odkudIdx].removeLast());
-
-        }
-
-      }
-
-
-
-      if (kam == "sloupec") sloupce[ci].addAll(tahaneKarty);
-
-      if (kam == "cil") {
-
-        cile[ci].addAll(tahaneKarty);
-
-        if (cile[ci].length == celkemVKategorii(prvni.kategorieId)) {
-
-          final RenderBox box = context.findRenderObject() as RenderBox;
-
-          vybuchni(box.localToGlobal(Offset.zero) + const Offset(30, 40));
-
-
-
-          Future.delayed(const Duration(milliseconds: 500), () {
-
-            if (mounted) {
-
-              setState(() {
-
-                archiv.addAll(cile[ci]);
-
-                cile[ci].clear();
-
-                if (archiv.length ==
-
-                    seznamLevelu[aktualniLevelIndex].karty.length) {
-
-                  _startKaskada();
-
-                }
-
-              });
-
-            }
-
-          });
-
-        }
-
-      }
-
-    });
-
-    ulozHru();
-
-    zkontrolujProhru();
-
-  }
 
   void zobrazitHerniMenu() {
     showDialog(
@@ -1337,21 +1424,35 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
   
 
-                  // BALÍČEK A ODPAD
+                                    // BALÍČEK A ODPAD
 
-                  Container(
+  
 
-                    margin: const EdgeInsets.only(top: 15, bottom: 20),
+                                    Container(
 
-                    child: Row(
+  
 
-                      mainAxisAlignment: MainAxisAlignment.center,
+                                      margin: const EdgeInsets.only(top: 45, bottom: 20),
 
-                      children: topRowItems,
+  
 
-                    ),
+                                      child: Row(
 
-                  ),
+  
+
+                                        mainAxisAlignment: MainAxisAlignment.center,
+
+  
+
+                                        children: topRowItems,
+
+  
+
+                                      ),
+
+  
+
+                                    ),
 
   
 
@@ -1445,13 +1546,15 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
                                                                         ),
 
-                                DragTarget<Map>(
+                                                                DragTarget<Map>(
 
-                                  onAcceptWithDetails: (details) =>
+                                                                  key: cilExistuje ? _cilKeys[idx] : null,
 
-                                      presun(details.data, "cil", idx, context),
+                                                                  onAcceptWithDetails: (details) =>
 
-                                                                    builder: (c, _, __) => Stack(
+                                                                      presun(details.data, "cil", idx),
+
+                                                                  builder: (c, _, __) => Stack(
 
                                                                       alignment: Alignment.center,
 
@@ -1547,13 +1650,13 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
                                 Expanded(
 
-                                  child: DragTarget<Map>(
+                                                                    child: DragTarget<Map>(
 
-                                    onAcceptWithDetails: (details) => presun(
+                                                                      onAcceptWithDetails: (details) => presun(
 
-                                        details.data, "sloupec", idx, context),
+                                                                          details.data, "sloupec", idx),
 
-                                    builder: (c, _, __) => Container(
+                                                                      builder: (c, _, __) => Container(
 
                                       width:
 
@@ -1931,11 +2034,87 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
   
 
-            // --- 4. EFEKTY A ANIMACE ---
+                        // --- 4. EFEKTY A ANIMACE ---
 
-            ...efekty,
+  
 
-            for (var k in kaskada)
+                        if (_confettiPozice != null)
+
+  
+
+                          Positioned(
+
+  
+
+                            left: _confettiPozice!.dx,
+
+  
+
+                            top: _confettiPozice!.dy,
+
+  
+
+                            child: ConfettiWidget(
+
+  
+
+                              confettiController: _confettiController,
+
+  
+
+                              blastDirectionality: BlastDirectionality.explosive,
+
+  
+
+                              shouldLoop: false,
+
+  
+
+                              numberOfParticles: 30,
+
+  
+
+                              gravity: 0.2,
+
+  
+
+                              emissionFrequency: 0.08,
+
+  
+
+                              colors: const [
+
+  
+
+                                Colors.amber,
+
+  
+
+                                Colors.white,
+
+  
+
+                                Colors.lightGreenAccent
+
+  
+
+                              ],
+
+  
+
+                            ),
+
+  
+
+                          ),
+
+  
+
+            
+
+  
+
+                        for (var k in kaskada)
 
               Positioned(left: k.x, top: k.y, child: vzhledKarty(k.data, true)),
 
