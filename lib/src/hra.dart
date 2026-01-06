@@ -138,7 +138,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
     _lizaciController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 400));
     _rozdavaciController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 200));
+        vsync: this, duration: const Duration(milliseconds: 250));
 
     // Listener pro lízací animaci
     _lizaciController!.addStatusListener((status) {
@@ -2358,235 +2358,255 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
   
 
-                          AnimatedBuilder(
+                                        AnimatedBuilder(
 
   
 
-                            animation: _rozdavaciController!,
+                                          animation: _rozdavaciController!,
 
   
 
-                            builder: (context, child) {
+                                          builder: (context, child) {
 
   
 
-                              final RenderBox? balicekBox =
+                                            final RenderBox? balicekBox =
 
   
 
-                                  _balicekKey.currentContext?.findRenderObject() as RenderBox?;
+                                                _balicekKey.currentContext?.findRenderObject() as RenderBox?;
 
   
 
-                              final RenderBox? sloupecBox = _sloupecDropTargetKeys[
+                                            final RenderBox? sloupecBox = _sloupecDropTargetKeys[
 
   
 
-                                      _cilovySloupecProRozdavani]
+                                                    _cilovySloupecProRozdavani]
 
   
 
-                                  .currentContext
+                                                .currentContext
 
   
 
-                                  ?.findRenderObject() as RenderBox?;
+                                                ?.findRenderObject() as RenderBox?;
 
   
 
-            
+                          
 
   
 
-                              // Pokud klíče ještě nejsou připravené, animaci nezobrazíme.
+                                            if (balicekBox == null || sloupecBox == null) {
 
   
 
-                              // Karta se objeví na místě v dalším snímku.
+                                              return const SizedBox.shrink();
 
   
 
-                              if (balicekBox == null || sloupecBox == null) {
+                                            }
 
   
 
-                                return const SizedBox.shrink();
+                          
 
   
 
-                              }
+                                            final balicekOffset = balicekBox.localToGlobal(Offset.zero);
 
   
 
-            
+                                            final startX = balicekOffset.dx;
 
   
 
-                              // Startovní pozice (levý horní roh balíčku)
+                                            final startY = balicekOffset.dy;
 
   
 
-                              final balicekOffset = balicekBox.localToGlobal(Offset.zero);
+                          
 
   
 
-                              final startX = balicekOffset.dx;
+                                            final sloupecOffset = sloupecBox.localToGlobal(Offset.zero);
 
   
 
-                              final startY = balicekOffset.dy;
+                                            final cilovySloupecData = sloupce[_cilovySloupecProRozdavani];
 
   
 
-            
+                                            final skrytyBalicekData =
 
   
 
-                              // Cílová pozice (místo, kde se objeví nová karta)
+                                                skryteBalicky[_cilovySloupecProRozdavani];
 
   
 
-                              final sloupecOffset = sloupecBox.localToGlobal(Offset.zero);
+                          
 
   
 
-                              final cilovySloupecData = sloupce[_cilovySloupecProRozdavani];
+                                            double yKartyVeSloupci;
 
   
 
-                              final skrytyBalicekData =
+                                            if (_leticiJeRub) {
 
   
 
-                                  skryteBalicky[_cilovySloupecProRozdavani];
+                                              yKartyVeSloupci = skrytyBalicekData.length * posunSkrytych;
 
   
 
-            
+                                            } else {
 
   
 
-                              double yKartyVeSloupci;
+                                              yKartyVeSloupci = (skrytyBalicekData.length * posunSkrytych) +
 
   
 
-                              if (_leticiJeRub) {
+                                                  (cilovySloupecData.length * posunOdkrytych);
 
   
 
-                                // Cílem je pozice pro další skrytou kartu
+                                            }
 
   
 
-                                yKartyVeSloupci = skrytyBalicekData.length * posunSkrytych;
+                          
 
   
 
-                              } else {
+                                            final cilX = sloupecOffset.dx;
 
   
 
-                                // Cílem je pozice pro další viditelnou kartu
+                                            final cilY = sloupecOffset.dy + yKartyVeSloupci;
 
   
 
-                                yKartyVeSloupci = (skrytyBalicekData.length * posunSkrytych) +
+                          
 
   
 
-                                    (cilovySloupecData.length * posunOdkrytych);
+                                            final curve = CurvedAnimation(
 
   
 
-                              }
+                                              parent: _rozdavaciController!,
 
   
 
-            
+                                              curve: Curves.easeInOutCubic,
 
   
 
-                              final cilX = sloupecOffset.dx;
+                                            );
 
   
 
-                              final cilY = sloupecOffset.dy + yKartyVeSloupci;
+                                            double t = curve.value;
 
   
 
-            
+                                            
 
   
 
-                              double t = CurvedAnimation(
+                                            // --- Vylepšená animace ---
 
   
 
-                                parent: _rozdavaciController!,
+                                            // 1. Zakřivený let (oblouk)
 
   
 
-                                curve: Curves.easeOutCubic, // Mírně upravená křivka
+                                            double arcHeight = 50.0;
 
   
 
-                              ).value;
+                                            double aktualniX = startX + (cilX - startX) * t;
 
   
 
-                              double aktualniX = startX + (cilX - startX) * t;
+                                            double aktualniY = startY + (cilY - startY) * t - (sin(t * pi) * arcHeight);
 
   
 
-                              double aktualniY = startY + (cilY - startY) * t;
+                          
 
   
 
-            
+                                            // 2. Rotace a "hop" efekt
 
   
 
-                              return Positioned(
+                                            double angle = (1 - t) * -0.3; // Karta se natočí a srovná
 
   
 
-                                left: aktualniX,
+                          
 
   
 
-                                top: aktualniY,
+                                            return Positioned(
 
   
 
-                                child: Transform.scale(
+                                              left: aktualniX,
 
   
 
-                                  scale: 1.0 + (sin(t * 3.14) * 0.15), // Mírnější "hop"
+                                              top: aktualniY,
 
   
 
-                                  child: vzhledKarty(_leticiRozdavanaKarta!, !_leticiJeRub,
+                                              child: Transform.rotate(
 
   
 
-                                      leti: true),
+                                                angle: angle,
 
   
 
-                                ),
+                                                child: Transform.scale(
 
   
 
-                              );
+                                                  scale: 1.0 + (sin(t * pi) * 0.1), // Jemnější hop
 
   
 
-                            },
+                                                  child: vzhledKarty(_leticiRozdavanaKarta!, !_leticiJeRub,
 
   
 
-                          ),
+                                                      leti: true),
+
+  
+
+                                                ),
+
+  
+
+                                              ),
+
+  
+
+                                            );
+
+  
+
+                                          },
+
+  
+
+                                        ),
 
   
 
