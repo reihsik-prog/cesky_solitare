@@ -70,6 +70,7 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
   late ConfettiController _confettiController;
   Offset? _confettiPozice;
+  int? _pileBeingCleared;
 
   List<SkakajiciKarta> kaskada = [];
 
@@ -823,79 +824,99 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
 
 
-          if (cile[ci].length == celkemVKategorii(prvni.kategorieId)) {
+                  if (cile[ci].length == celkemVKategorii(prvni.kategorieId)) {
 
 
 
-            final RenderBox box =
+                    final RenderBox box =
 
 
 
-                _cilKeys[ci].currentContext!.findRenderObject() as RenderBox;
+                        _cilKeys[ci].currentContext!.findRenderObject() as RenderBox;
 
 
 
-            vybuchni(box.localToGlobal(Offset.zero) +
+                    vybuchni(box.localToGlobal(Offset.zero) +
 
 
 
-                Offset(box.size.width / 2, box.size.height / 2));
+                        Offset(box.size.width / 2, box.size.height / 2));
 
 
 
-  
+                    
 
 
 
-            Future.delayed(const Duration(milliseconds: 500), () {
+                    setState(() {
 
 
 
-              if (mounted) {
+                      _pileBeingCleared = ci;
 
 
 
-                setState(() {
+                    });
 
 
 
-                  archiv.addAll(cile[ci]);
+          
 
 
 
-                  cile[ci].clear();
+                    Future.delayed(const Duration(milliseconds: 500), () {
 
 
 
-                  if (archiv.length ==
+                      if (mounted) {
 
 
 
-                      seznamLevelu[aktualniLevelIndex].karty.length) {
+                        setState(() {
 
 
 
-                    _startKaskada();
+                          archiv.addAll(cile[ci]);
+
+
+
+                          cile[ci].clear();
+
+
+
+                          _pileBeingCleared = null;
+
+
+
+                          if (archiv.length ==
+
+
+
+                              seznamLevelu[aktualniLevelIndex].karty.length) {
+
+
+
+                            _startKaskada();
+
+
+
+                          }
+
+
+
+                        });
+
+
+
+                      }
+
+
+
+                    });
 
 
 
                   }
-
-
-
-                });
-
-
-
-              }
-
-
-
-            });
-
-
-
-          }
 
 
 
@@ -1594,47 +1615,109 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
                                                                         // The Content
 
-                                                                        if (!cilExistuje || cile[idx].isEmpty)
+                                                                                                                  if (!cilExistuje || cile[idx].isEmpty)
 
-                                                                          Icon(
+                                                                                                                    Icon(
 
-                                                                            Icons.star,
+                                                                                                                      Icons.star,
 
-                                                                            color: const Color.fromARGB(77, 255, 193, 7),
+                                                                                                                      color: const Color.fromARGB(77, 255, 193, 7),
 
-                                                                            size: sirkaKarty * 0.5,
+                                                                                                                      size: sirkaKarty * 0.5,
 
-                                                                          )
+                                                                                                                    )
 
-                                                                        else
+                                                                                                                  else
 
-                                                                          Stack(
+                                                                                                                    Builder(builder: (context) {
 
-                                                                            alignment: Alignment.center,
+                                                                                                                      final cardStack = Stack(
 
-                                                                                                                      children: cile[idx]
+                                                                                                                        alignment: Alignment.center,
 
-                                                                                                                          .map((karta) => vzhledKarty(
+                                                                                                                        children: cile[idx]
 
-                                                                                                                                karta,
+                                                                                                                            .map((karta) =>
 
-                                                                                                                                true,
+                                                                                                                                vzhledKarty(
 
-                                                                                                                                pocitadlo: (cile[idx].indexOf(karta) > 0)
+                                                                                                                                  karta,
 
-                                                                                                                                    ? "${cile[idx].indexOf(karta)}/${celkemVKategorii(karta.kategorieId) - 1}"
+                                                                                                                                  true,
 
-                                                                                                                                    : null,
+                                                                                                                                  pocitadlo: (cile[idx]
 
-                                                                                                                                zobrazIkonu: cile[idx].last == karta,
+                                                                                                                                              .indexOf(
 
-                                                                                                                                jeVCili: true,
+                                                                                                                                                  karta) >
 
-                                                                                                                              ))
+                                                                                                                                          0)
 
-                                                                                                                          .toList(),
+                                                                                                                                      ? "${cile[idx].indexOf(karta)}/${celkemVKategorii(karta.kategorieId) - 1}"
 
-                                                                          ),
+                                                                                                                                      : null,
+
+                                                                                                                                  zobrazIkonu: cile[idx]
+
+                                                                                                                                          .last ==
+
+                                                                                                                                      karta,
+
+                                                                                                                                  jeVCili: true,
+
+                                                                                                                                ))
+
+                                                                                                                            .toList(),
+
+                                                                                                                      );
+
+                                                                        
+
+                                                                                                                      if (idx == _pileBeingCleared) {
+
+                                                                                                                        return TweenAnimationBuilder<
+
+                                                                                                                            double>(
+
+                                                                                                                          tween: Tween(
+
+                                                                                                                              begin: 1.0, end: 0.0),
+
+                                                                                                                          duration: const Duration(
+
+                                                                                                                              milliseconds: 450),
+
+                                                                                                                          builder:
+
+                                                                                                                              (context, value, child) {
+
+                                                                                                                            return Opacity(
+
+                                                                                                                              opacity: value,
+
+                                                                                                                              child: Transform.scale(
+
+                                                                                                                                scale: value,
+
+                                                                                                                                child: child,
+
+                                                                                                                              ),
+
+                                                                                                                            );
+
+                                                                                                                          },
+
+                                                                                                                          child: cardStack,
+
+                                                                                                                        );
+
+                                                                                                                      } else {
+
+                                                                                                                        return cardStack;
+
+                                                                                                                      }
+
+                                                                                                                    }),
 
                                                                       ],
 
