@@ -901,13 +901,11 @@ class _SlovniSolitareState extends State<SlovniSolitare>
                                 leading: const Icon(Icons.play_circle_filled,
                                     color: Colors.purple),
                                 onTap: () {
-                                  setState(() {
-                                    aktualniLevelIndex = index;
-                                    ulozenyZacatekSkore = 0;
-                                    skore = 0;
-                                  });
-                                  restartHry(novyLevel: false);
                                   Navigator.of(context).pop();
+                                  aktualniLevelIndex = index;
+                                  ulozenyZacatekSkore = 0;
+                                  skore = 0;
+                                  restartHry(novyLevel: false);
                                 },
                               );
                             },
@@ -1447,97 +1445,91 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
                                       presun(details.data, "cil", idx, context),
 
-                                  builder: (c, _, __) => Container(
+                                                                    builder: (c, _, __) => Stack(
 
-                                    width: sirkaKarty,
+                                                                      alignment: Alignment.center,
 
-                                    height: vyskaKarty,
+                                                                      children: [
 
-                                    decoration: BoxDecoration(
+                                                                        // The Frame
 
-                                      color:
+                                                                        Container(
 
-                                          const Color.fromARGB(51, 0, 0, 0),
+                                                                          width: sirkaKarty,
 
-                                      borderRadius: BorderRadius.circular(
+                                                                          height: vyskaKarty,
 
-                                          sirkaKarty * 0.16), // 10/62
+                                                                                                                  decoration: BoxDecoration(
 
-                                      border: Border.all(
+                                                                                                                    color: const Color.fromARGB(51, 0, 0, 0),
 
-                                        color: cilExistuje && cile[idx].isNotEmpty
+                                                                                                                                                              borderRadius: BorderRadius.circular(sirkaKarty * 0.16),
 
-                                            ? const Color.fromARGB(
+                                                                                                                                                                                                        border: cilExistuje && cile[idx].isEmpty
 
-                                                179, 255, 193, 7)
+                                                                                                                                                                                                            ? Border.all(
 
-                                            : Colors.white10,
+                                                                                                                                                                                                                color: Colors.amber.withOpacity(0.5),
 
-                                        width: cilExistuje && cile[idx].isNotEmpty
+                                                                                                                                                                                                                width: 2,
 
-                                            ? 2.5
+                                                                                                                                                                                                                strokeAlign: BorderSide.strokeAlignOutside,
 
-                                            : 2,
+                                                                                                                                                                                                              )
 
-                                      ),
+                                                                                                                                                                                                            : null,
 
-                                    ),
+                                                                                                                                                            ),
 
-                                    child: !cilExistuje || cile[idx].isEmpty
+                                                                        ),
 
-                                        ? Icon(Icons.star,
+                                                                        // The Content
 
-                                            color: const Color.fromARGB(
+                                                                        if (!cilExistuje || cile[idx].isEmpty)
 
-                                                77, 255, 193, 7),
+                                                                          Icon(
 
-                                            size: sirkaKarty * 0.5) // 30/62
+                                                                            Icons.star,
 
-                                        : Stack(
+                                                                            color: const Color.fromARGB(77, 255, 193, 7),
 
-                                            clipBehavior: Clip.none,
+                                                                            size: sirkaKarty * 0.5,
 
-                                            children: [
+                                                                          )
 
-                                              for (int n = 0;
+                                                                        else
 
-                                                  n < cile[idx].length;
+                                                                          Stack(
 
-                                                  n++)
+                                                                            alignment: Alignment.center,
 
-                                                Positioned(
+                                                                                                                      children: cile[idx]
 
-                                                  top: n *
+                                                                                                                          .map((karta) => vzhledKarty(
 
-                                                      (vyskaKarty *
+                                                                                                                                karta,
 
-                                                          0.025), // 2.0/85
+                                                                                                                                true,
 
-                                                  child: vzhledKarty(
+                                                                                                                                pocitadlo: (cile[idx].indexOf(karta) > 0)
 
-                                                    cile[idx][n],
+                                                                                                                                    ? "${cile[idx].indexOf(karta)}/${celkemVKategorii(karta.kategorieId) - 1}"
 
-                                                    true,
+                                                                                                                                    : null,
 
-                                                    pocitadlo: (n > 0)
+                                                                                                                                zobrazIkonu: cile[idx].last == karta,
 
-                                                        ? "$n/${celkemVKategorii(cile[idx][n].kategorieId) - 1}"
+                                                                                                                                jeVCili: true,
 
-                                                        : null,
+                                                                                                                              ))
 
-                                                    zobrazIkonu: n ==
+                                                                                                                          .toList(),
 
-                                                        cile[idx].length - 1,
+                                                                          ),
 
-                                                  ),
+                                                                      ],
 
-                                                )
-
-                                            ],
-
-                                          ),
-
-                                  ),
+                                                                    ),
 
                                 ),
 
@@ -2206,7 +2198,8 @@ class _SlovniSolitareState extends State<SlovniSolitare>
       bool zobrazIkonu = false,
       bool otocitText = false,
       bool isGray = false,
-      bool jeZakryta = false}) {
+      bool jeZakryta = false,
+      bool jeVCili = false}) {
     // --- NOVÁ LOGIKA PRO VZHLED STARÉ KARTY ---
     final bool pouzitVzhledStareKarty = odhalena && !k.jeHlavni && !leti && !isGray;
 
@@ -2237,9 +2230,11 @@ class _SlovniSolitareState extends State<SlovniSolitare>
             : Colors.grey[400]!)
         : Colors.white;
 
-    final Color barvaVnitrniLinky = k.jeHlavni
-        ? const Color.fromARGB(77, 121, 85, 72)
-        : const Color.fromARGB(77, 158, 158, 158);
+    final Color barvaVnitrniLinky = jeVCili
+        ? Colors.amber
+        : (k.jeHlavni
+            ? const Color.fromARGB(77, 121, 85, 72)
+            : const Color.fromARGB(77, 158, 158, 158));
 
     final TextStyle stylPisma = GoogleFonts.raleway(
       fontWeight: FontWeight.w700,
@@ -2362,7 +2357,7 @@ colorFilter: ColorFilter.mode(
                       margin: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(sirkaKarty * 0.1), // 6/60
-                        border: Border.all(color: barvaVnitrniLinky, width: 1),
+                        border: Border.all(color: barvaVnitrniLinky, width: 2),
                       ),
                     ),
                   if (k.jeHlavni && !isGray)
