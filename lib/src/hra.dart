@@ -114,6 +114,8 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
   Map<String, int>? _tahanaPozice;
 
+  bool _tahamZOdpadu = false;
+
 
 
   @override
@@ -1123,11 +1125,15 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
                         (i - max(0, odpad.length - 3)) * posunOdpadu,
 
-                    child: (i == odpad.length - 1)
+                                                                                child: (i == odpad.length - 1)
 
-                        ? tahatelna([odpad[i]], "odpad", 0)
+                                                                                    ? tahatelna([odpad[i]], "odpad", 0)
 
-                        : vzhledKarty(odpad[i], true, otocitText: true),
+                                                                                    : vzhledKarty(odpad[i], true,
+
+                                                                                        otocitText:
+
+                                                                                            !(i == odpad.length - 2 && _tahamZOdpadu)),
 
                   ),
 
@@ -2157,13 +2163,22 @@ class _SlovniSolitareState extends State<SlovniSolitare>
       data: {'karty': k, 't': t, 'i': i},
       onDragStarted: () {
         if (vibraceZapnute) HapticFeedback.selectionClick();
-        if (t == "sloupec") {
-          setState(
-              () => _tahanaPozice = {'col': i, 'idx': indexVPuvodnimSloupci});
-        }
+        setState(() {
+          if (t == "sloupec") {
+            _tahanaPozice = {'col': i, 'idx': indexVPuvodnimSloupci};
+          } else if (t == "odpad") {
+            _tahamZOdpadu = true;
+          }
+        });
       },
-      onDraggableCanceled: (_, __) => setState(() => _tahanaPozice = null),
-      onDragEnd: (_) => setState(() => _tahanaPozice = null),
+      onDraggableCanceled: (_, __) => setState(() {
+        _tahanaPozice = null;
+        _tahamZOdpadu = false;
+      }),
+      onDragEnd: (_) => setState(() {
+        _tahanaPozice = null;
+        _tahamZOdpadu = false;
+      }),
       feedback: Material(
         color: Colors.transparent,
         child: Transform.scale(
