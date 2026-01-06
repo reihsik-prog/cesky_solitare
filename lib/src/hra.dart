@@ -4,26 +4,27 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'data_modely.dart';
 import 'seznam_levelu.dart';
-import 'globalni_nastaveni.dart';
+import 'app_providers.dart';
 import 'vykreslovani.dart';
 
 // ============================================================================
 // --- HRA (SlovniSolitare) ---
 // ============================================================================
 
-class SlovniSolitare extends StatefulWidget {
+class SlovniSolitare extends ConsumerStatefulWidget {
   final bool nacistUlozenou;
   const SlovniSolitare({super.key, this.nacistUlozenou = false});
   @override
-  State<SlovniSolitare> createState() => _SlovniSolitareState();
+  ConsumerState<SlovniSolitare> createState() => _SlovniSolitareState();
 }
 
-class _SlovniSolitareState extends State<SlovniSolitare>
+class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
     with TickerProviderStateMixin {
 
@@ -63,6 +64,8 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
   List<int> idsKategoriiProCile = [];
   List<GlobalKey> _cilKeys = [];
+  final GlobalKey _balicekKey = GlobalKey();
+  List<GlobalKey> _sloupecDropTargetKeys = [];
 
 
 
@@ -116,9 +119,12 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
   bool rozdavam = false;
 
-  Map<String, int>? _tahanaPozice;
-
+  Map<String, dynamic>? _tahanaPozice;
   bool _tahamZOdpadu = false;
+
+  // Proměnné pro řízení rozdávání
+  List<Map<String, dynamic>> _akceRozdavani = [];
+  int _rozdavaciIndex = 0;
 
 
 
@@ -130,29 +136,40 @@ class _SlovniSolitareState extends State<SlovniSolitare>
     _confettiController =
         ConfettiController(duration: const Duration(seconds: 1));
     _lizaciController = AnimationController(
-
         vsync: this, duration: const Duration(milliseconds: 400));
-
     _rozdavaciController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 200));
 
-        vsync: this, duration: const Duration(milliseconds: 300));
-
+    // Listener pro lízací animaci
     _lizaciController!.addStatusListener((status) {
-
       if (status == AnimationStatus.completed) {
-
         setState(() {
-
           if (_leticiKarta != null) odpad.add(_leticiKarta!);
-
           _leticiKarta = null;
-
           _lizaciController!.reset();
-
         });
-
       }
+    });
 
+    // Listener pro rozdávací animaci
+    _rozdavaciController!.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        // Karta doletěla na místo, přesuneme data a připravíme další krok
+        setState(() {
+          if (balicek.isNotEmpty) {
+            KartaData skutecnaKarta = balicek.removeAt(0);
+            if (_leticiJeRub) {
+              skryteBalicky[_cilovySloupecProRozdavani].add(skutecnaKarta);
+            } else {
+              sloupce[_cilovySloupecProRozdavani].add(skutecnaKarta);
+            }
+          }
+          _leticiRozdavanaKarta = null;
+          _rozdavaciController!.reset();
+        });
+        // Spustíme další krok rozdávání
+        _provedDalsiKrokRozdavani();
+      }
     });
 
 
@@ -264,6 +281,7 @@ class _SlovniSolitareState extends State<SlovniSolitare>
       aktualniLevelIndex = prefs.getInt('level') ?? 0;
 
       pocetSloupcu = prefs.getInt('pocetSloupcu') ?? 4;
+      _sloupecDropTargetKeys = List.generate(pocetSloupcu, (_) => GlobalKey());
 
       balicek = rozbalKarty(prefs.getString('balicek') ?? "[]");
 
@@ -311,215 +329,326 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
       pocetTahu = prefs.getInt('tahy') ?? 0;
 
-    });
-
-  }
-
-
-
-  void restartHry({bool novyLevel = false}) async {
-
-    _kaskadaTicker?.stop();
-
-
-
-    setState(() {
-
-      rozdavam = true;
-
-
-
-      if (novyLevel) {
-
-        ulozenyZacatekSkore = skore;
-
-        if (aktualniLevelIndex < seznamLevelu.length - 1) {
-
-          aktualniLevelIndex++;
-
-        } else {
-
-          aktualniLevelIndex = 0;
-
-          ulozenyZacatekSkore = 0;
-
-        }
+        });
 
       }
 
-      
+    
 
-      final level = seznamLevelu[aktualniLevelIndex];
+      void _provedDalsiKrokRozdavani() {
 
-      pocetSloupcu = level.pocetSloupcu;
+        if (_rozdavaciIndex >= _akceRozdavani.length || balicek.isEmpty) {
 
+          setState(() {
 
+            rozdavam = false;
 
-      skore = ulozenyZacatekSkore;
+          });
 
-      balicek = List.from(level.karty);
+          ulozHru();
 
-      balicek.shuffle();
-
-
-
-      odpad = [];
-
-
-
-      var unikatniIds = balicek.map((e) => e.kategorieId).toSet().toList();
-
-      idsKategoriiProCile = unikatniIds;
-
-
-
-            cile = List.generate(unikatniIds.length, (_) => <KartaData>[]);
-
-
-
-            _cilKeys = List.generate(unikatniIds.length, (_) => GlobalKey());
-
-
-
-            sloupce = List.generate(pocetSloupcu, (_) => []);
-
-      skryteBalicky = List.generate(pocetSloupcu, (_) => []);
-
-
-
-      archiv = [];
-
-      kaskada = [];
-
-      pocetTahu = 0;
-
-      jeKonecHryProhra = false;
-
-      _tahanaPozice = null;
-
-    });
-
-
-
-    List<int> ciloveSkryte = List.generate(pocetSloupcu, (_) => _rnd.nextInt(3));
-
-    ciloveSkryte.shuffle();
-
-
-
-    List<Map<String, dynamic>> akceRozdavani = [];
-
-    int maxSkrytych = ciloveSkryte.reduce(max);
-
-
-
-    for (int radek = 0; radek < maxSkrytych + 1; radek++) {
-
-      for (int s = 0; s < pocetSloupcu; s++) {
-
-        if (radek < ciloveSkryte[s]) {
-
-          akceRozdavani.add({'col': s, 'rub': true});
-
-        } else if (radek == ciloveSkryte[s]) {
-
-          akceRozdavani.add({'col': s, 'rub': false});
+          return;
 
         }
 
-      }
+    
 
-    }
+        final akce = _akceRozdavani[_rozdavaciIndex];
 
+        int cilovySloupec = akce['col'];
 
+        bool jeRub = akce['rub'];
 
-    for (var akce in akceRozdavani) {
+    
 
-      if (balicek.isEmpty) break;
+        if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
 
-
-
-      int cilovySloupec = akce['col'];
-
-      bool jeRub = akce['rub'];
-
-
-
-      setState(() {
-
-        if (jeRub) {
-
-          _leticiRozdavanaKarta = KartaData("", false, 0);
-
-        } else {
-
-          _leticiRozdavanaKarta = balicek[0];
+          HapticFeedback.selectionClick();
 
         }
 
+    
 
-
-        _cilovySloupecProRozdavani = cilovySloupec;
-
-        _leticiJeRub = jeRub;
-
-
-
-        _rozdavaciController!.reset();
-
-        _rozdavaciController!.forward();
-
-
-
-        if (vibraceZapnute) HapticFeedback.selectionClick();
-
-      });
-
-
-
-      await Future.delayed(const Duration(milliseconds: 200));
-
-
-
-      setState(() {
-
-        if (balicek.isNotEmpty) {
-
-          KartaData skutecnaKarta = balicek.removeAt(0);
-
-
+        setState(() {
 
           if (jeRub) {
 
-            skryteBalicky[cilovySloupec].add(skutecnaKarta);
+            _leticiRozdavanaKarta = KartaData("", false, 0); // Dummy card
 
           } else {
 
-            sloupce[cilovySloupec].add(skutecnaKarta);
+            _leticiRozdavanaKarta = balicek[0];
 
           }
 
-        }
+          _cilovySloupecProRozdavani = cilovySloupec;
 
-        _leticiRozdavanaKarta = null;
+          _leticiJeRub = jeRub;
 
-      });
+          _rozdavaciController!.forward();
 
-    }
+        });
 
+    
 
+        _rozdavaciIndex++;
 
-    setState(() {
+      }
 
-      rozdavam = false;
+    
 
-    });
+          void restartHry({bool novyLevel = false}) {
 
+    
 
+            _kaskadaTicker?.stop();
 
-    ulozHru();
+    
 
-  }
+        
+
+    
+
+            final level = seznamLevelu[aktualniLevelIndex];
+
+    
+
+            final pocetSloupcuProPlan = level.pocetSloupcu;
+    
+            _sloupecDropTargetKeys =
+                List.generate(pocetSloupcuProPlan, (_) => GlobalKey());
+
+    
+
+            List<int> ciloveSkryte =
+
+    
+
+                List.generate(pocetSloupcuProPlan, (_) => _rnd.nextInt(3));
+
+    
+
+            ciloveSkryte.shuffle();
+
+    
+
+        
+
+    
+
+            _akceRozdavani.clear();
+
+    
+
+            int maxSkrytych = ciloveSkryte.isNotEmpty ? ciloveSkryte.reduce(max) : -1;
+
+    
+
+        
+
+    
+
+            for (int radek = 0; radek < maxSkrytych + 1; radek++) {
+
+    
+
+              for (int s = 0; s < pocetSloupcuProPlan; s++) {
+
+    
+
+                if (radek < ciloveSkryte[s]) {
+
+    
+
+                  _akceRozdavani.add({'col': s, 'rub': true});
+
+    
+
+                } else if (radek == ciloveSkryte[s]) {
+
+    
+
+                  _akceRozdavani.add({'col': s, 'rub': false});
+
+    
+
+                }
+
+    
+
+              }
+
+    
+
+            }
+
+    
+
+        
+
+    
+
+            setState(() {
+
+    
+
+              rozdavam = true;
+
+    
+
+        
+
+    
+
+              if (novyLevel) {
+
+    
+
+                ulozenyZacatekSkore = skore;
+
+    
+
+                if (aktualniLevelIndex < seznamLevelu.length - 1) {
+
+    
+
+                  aktualniLevelIndex++;
+
+    
+
+                } else {
+
+    
+
+                  aktualniLevelIndex = 0;
+
+    
+
+                  ulozenyZacatekSkore = 0;
+
+    
+
+                }
+
+    
+
+              }
+
+    
+
+        
+
+    
+
+              pocetSloupcu = level.pocetSloupcu;
+
+    
+
+        
+
+    
+
+              skore = ulozenyZacatekSkore;
+
+    
+
+              balicek = List.from(level.karty);
+
+    
+
+              balicek.shuffle();
+
+    
+
+        
+
+    
+
+              odpad = [];
+
+    
+
+        
+
+    
+
+              var unikatniIds = balicek.map((e) => e.kategorieId).toSet().toList();
+
+    
+
+              idsKategoriiProCile = unikatniIds;
+
+    
+
+        
+
+    
+
+              cile = List.generate(unikatniIds.length, (_) => <KartaData>[]);
+
+    
+
+        
+
+    
+
+              _cilKeys = List.generate(unikatniIds.length, (_) => GlobalKey());
+
+    
+
+        
+
+    
+
+              sloupce = List.generate(pocetSloupcu, (_) => []);
+
+    
+
+              skryteBalicky = List.generate(pocetSloupcu, (_) => []);
+
+    
+
+        
+
+    
+
+              archiv = [];
+
+    
+
+              kaskada = [];
+
+    
+
+              pocetTahu = 0;
+
+    
+
+              jeKonecHryProhra = false;
+
+    
+
+              _tahanaPozice = null;
+
+    
+
+            });
+
+    
+
+        
+
+    
+
+            _rozdavaciIndex = 0;
+
+    
+
+            Future.delayed(Duration.zero, _provedDalsiKrokRozdavani);
+
+    
+
+          }
 
 
 
@@ -620,7 +749,9 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
     if (_lizaciController!.isAnimating) return;
 
-    if (vibraceZapnute) HapticFeedback.lightImpact();
+    if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
+      HapticFeedback.lightImpact();
+    }
 
 
 
@@ -732,7 +863,9 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
 
 
-        if (vibraceZapnute) HapticFeedback.heavyImpact();
+        if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
+          HapticFeedback.heavyImpact();
+        }
 
 
 
@@ -955,128 +1088,138 @@ class _SlovniSolitareState extends State<SlovniSolitare>
             ),
           ),
         ),
-        content: StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text("POKRAČOVAT"),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(220, 45)),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  label: const Text("RESTARTOVAT"),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber,
-                      foregroundColor: Colors.black,
-                      minimumSize: const Size(220, 45)),
-                  onPressed: () {
-                    restartHry(novyLevel: false);
-                    Navigator.of(context).pop();
-                  },
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.list_alt),
-                  label: const Text("CHEAT: VYBRAT LEVEL"),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(220, 45)),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: const Color(0xFFFFF8E1),
-                        title: const Text("Kam chceš skočit?",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          height: 300,
-                          child: ListView.builder(
-                            itemCount: seznamLevelu.length,
-                            itemBuilder: (context, index) {
-                              return ListTile(
-                                title: Text("Level ${index + 1}",
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold)),
-                                leading: const Icon(Icons.play_circle_filled,
-                                    color: Colors.purple),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  aktualniLevelIndex = index;
-                                  ulozenyZacatekSkore = 0;
-                                  skore = 0;
-                                  restartHry(novyLevel: false);
-                                },
-                              );
-                            },
-                          ),
+        content: Consumer(builder: (context, ref, child) {
+          final settingsAsync = ref.watch(settingsProvider);
+          final settings = settingsAsync.value;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                icon: const Icon(Icons.play_arrow),
+                label: const Text("POKRAČOVAT"),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(220, 45)),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text("RESTARTOVAT"),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber,
+                    foregroundColor: Colors.black,
+                    minimumSize: const Size(220, 45)),
+                onPressed: () {
+                  restartHry(novyLevel: false);
+                  Navigator.of(context).pop();
+                },
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.list_alt),
+                label: const Text("CHEAT: VYBRAT LEVEL"),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(220, 45)),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: const Color(0xFFFFF8E1),
+                      title: const Text("Kam chceš skočit?",
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      content: SizedBox(
+                        width: double.maxFinite,
+                        height: 300,
+                        child: ListView.builder(
+                          itemCount: seznamLevelu.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              title: Text("Level ${index + 1}",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
+                              leading: const Icon(Icons.play_circle_filled,
+                                  color: Colors.purple),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                aktualniLevelIndex = index;
+                                ulozenyZacatekSkore = 0;
+                                skore = 0;
+                                restartHry(novyLevel: false);
+                              },
+                            );
+                          },
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text("ZRUŠIT"),
-                          )
-                        ],
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.exit_to_app),
-                  label: const Text("UKONČIT HRU"),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFB71C1C),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(220, 45)),
-                  onPressed: () {
-                    ulozHru();
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                  },
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 15.0),
-                  child: Divider(color: Color(0xFFD7CCC8), thickness: 1.5),
-                ),
-                SwitchListTile(
-                  title: const Text("Zvuky", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4E342E))),
-                  secondary: Icon(zvukyZapnute ? Icons.volume_up : Icons.volume_off, color: const Color(0xFF4E342E)),
-                  value: zvukyZapnute,
-                  activeColor: Colors.green,
-                  onChanged: (bool value) {
-                    setState(() {
-                      zvukyZapnute = value;
-                    });
-                    ulozNastaveni();
-                  },
-                ),
-                SwitchListTile(
-                  title: const Text("Vibrace", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4E342E))),
-                  secondary: Icon(vibraceZapnute ? Icons.vibration : Icons.phone_android, color: const Color(0xFF4E342E)),
-                  value: vibraceZapnute,
-                  activeColor: Colors.green,
-                  onChanged: (bool value) {
-                    setState(() {
-                      vibraceZapnute = value;
-                    });
-                    ulozNastaveni();
-                  },
-                ),
-              ],
-            );
-          },
-        ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text("ZRUŠIT"),
+                        )
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.exit_to_app),
+                label: const Text("UKONČIT HRU"),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB71C1C),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(220, 45)),
+                onPressed: () {
+                  ulozHru();
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                },
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 15.0),
+                child: Divider(color: Color(0xFFD7CCC8), thickness: 1.5),
+              ),
+              SwitchListTile(
+                title: const Text("Zvuky",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4E342E))),
+                secondary: Icon(
+                    settings?.zvukyZapnute ?? true
+                        ? Icons.volume_up
+                        : Icons.volume_off,
+                    color: const Color(0xFF4E342E)),
+                value: settings?.zvukyZapnute ?? true,
+                activeColor: Colors.green,
+                onChanged: settings == null
+                    ? null
+                    : (bool value) =>
+                        ref.read(settingsProvider.notifier).setZvuky(value),
+              ),
+              SwitchListTile(
+                title: const Text("Vibrace",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4E342E))),
+                secondary: Icon(
+                    settings?.vibraceZapnute ?? true
+                        ? Icons.vibration
+                        : Icons.phone_android,
+                    color: const Color(0xFF4E342E)),
+                value: settings?.vibraceZapnute ?? true,
+                activeColor: Colors.green,
+                onChanged: settings == null
+                    ? null
+                    : (bool value) =>
+                        ref.read(settingsProvider.notifier).setVibrace(value),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -1127,9 +1270,11 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
           height: vyskaKarty,
 
-          child: GestureDetector(
+                    child: GestureDetector(
 
-            onTap: lizni,
+                      key: _balicekKey,
+
+                      onTap: lizni,
 
             child: Center(
 
@@ -1731,13 +1876,15 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
                                 // Spodní SLOUPCE (Opravené centrování karet)
 
-                                Expanded(
+                                                                Expanded(
 
-                                                                    child: DragTarget<Map>(
+                                                                  child: DragTarget<Map>(
 
-                                                                      onAcceptWithDetails: (details) => presun(
+                                                                    key: _sloupecDropTargetKeys[idx],
 
-                                                                          details.data, "sloupec", idx),
+                                                                    onAcceptWithDetails: (details) => presun(
+
+                                                                        details.data, "sloupec", idx),
 
                                                                       builder: (c, _, __) => Container(
 
@@ -2203,63 +2350,243 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
   
 
-            // Animace rozdávání
-
-            if (_leticiRozdavanaKarta != null)
-
-              AnimatedBuilder(
-
-                animation: _rozdavaciController!,
-
-                builder: (context, child) {
-
-                  double sirka = MediaQuery.of(context).size.width;
-
-                  double startX = sirkaSloupce;
-
-                  double startY = 100;
-
-                  
-
-                  double cilX = (_cilovySloupecProRozdavani * sirkaSloupce) + (sirkaSloupce - sirkaKarty) / 2;
-
-                  double cilY = vyskaKarty * 2.5;
+                        // Animace rozdávání
 
   
 
-                  double t = CurvedAnimation(
+                        if (_leticiRozdavanaKarta != null)
 
-                          parent: _rozdavaciController!,
+  
 
-                          curve: Curves.easeInOutCubic)
+                          AnimatedBuilder(
 
-                      .value;
+  
 
-                  double aktualniX = startX + (cilX - startX) * t;
+                            animation: _rozdavaciController!,
 
-                  double aktualniY = startY + (cilY - startY) * t;
+  
 
-                  return Positioned(
+                            builder: (context, child) {
 
-                    left: aktualniX,
+  
 
-                    top: aktualniY,
+                              final RenderBox? balicekBox =
 
-                    child: Transform.scale(
+  
 
-                      scale: 1.0 + (sin(t * 3.14) * 0.2),
+                                  _balicekKey.currentContext?.findRenderObject() as RenderBox?;
 
-                      child: vzhledKarty(_leticiRozdavanaKarta!, !_leticiJeRub,
+  
 
-                          leti: true),
+                              final RenderBox? sloupecBox = _sloupecDropTargetKeys[
 
-                    ),
+  
 
-                  );
+                                      _cilovySloupecProRozdavani]
 
-                },
+  
 
-              ),
+                                  .currentContext
+
+  
+
+                                  ?.findRenderObject() as RenderBox?;
+
+  
+
+            
+
+  
+
+                              // Pokud klíče ještě nejsou připravené, animaci nezobrazíme.
+
+  
+
+                              // Karta se objeví na místě v dalším snímku.
+
+  
+
+                              if (balicekBox == null || sloupecBox == null) {
+
+  
+
+                                return const SizedBox.shrink();
+
+  
+
+                              }
+
+  
+
+            
+
+  
+
+                              // Startovní pozice (levý horní roh balíčku)
+
+  
+
+                              final balicekOffset = balicekBox.localToGlobal(Offset.zero);
+
+  
+
+                              final startX = balicekOffset.dx;
+
+  
+
+                              final startY = balicekOffset.dy;
+
+  
+
+            
+
+  
+
+                              // Cílová pozice (místo, kde se objeví nová karta)
+
+  
+
+                              final sloupecOffset = sloupecBox.localToGlobal(Offset.zero);
+
+  
+
+                              final cilovySloupecData = sloupce[_cilovySloupecProRozdavani];
+
+  
+
+                              final skrytyBalicekData =
+
+  
+
+                                  skryteBalicky[_cilovySloupecProRozdavani];
+
+  
+
+            
+
+  
+
+                              double yKartyVeSloupci;
+
+  
+
+                              if (_leticiJeRub) {
+
+  
+
+                                // Cílem je pozice pro další skrytou kartu
+
+  
+
+                                yKartyVeSloupci = skrytyBalicekData.length * posunSkrytych;
+
+  
+
+                              } else {
+
+  
+
+                                // Cílem je pozice pro další viditelnou kartu
+
+  
+
+                                yKartyVeSloupci = (skrytyBalicekData.length * posunSkrytych) +
+
+  
+
+                                    (cilovySloupecData.length * posunOdkrytych);
+
+  
+
+                              }
+
+  
+
+            
+
+  
+
+                              final cilX = sloupecOffset.dx;
+
+  
+
+                              final cilY = sloupecOffset.dy + yKartyVeSloupci;
+
+  
+
+            
+
+  
+
+                              double t = CurvedAnimation(
+
+  
+
+                                parent: _rozdavaciController!,
+
+  
+
+                                curve: Curves.easeOutCubic, // Mírně upravená křivka
+
+  
+
+                              ).value;
+
+  
+
+                              double aktualniX = startX + (cilX - startX) * t;
+
+  
+
+                              double aktualniY = startY + (cilY - startY) * t;
+
+  
+
+            
+
+  
+
+                              return Positioned(
+
+  
+
+                                left: aktualniX,
+
+  
+
+                                top: aktualniY,
+
+  
+
+                                child: Transform.scale(
+
+  
+
+                                  scale: 1.0 + (sin(t * 3.14) * 0.15), // Mírnější "hop"
+
+  
+
+                                  child: vzhledKarty(_leticiRozdavanaKarta!, !_leticiJeRub,
+
+  
+
+                                      leti: true),
+
+  
+
+                                ),
+
+  
+
+                              );
+
+  
+
+                            },
+
+  
+
+                          ),
 
   
 
@@ -2446,10 +2773,16 @@ class _SlovniSolitareState extends State<SlovniSolitare>
     return Draggable<Map>(
       data: {'karty': k, 't': t, 'i': i},
       onDragStarted: () {
-        if (vibraceZapnute) HapticFeedback.selectionClick();
+        if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
+          HapticFeedback.selectionClick();
+        }
         setState(() {
           if (t == "sloupec") {
-            _tahanaPozice = {'col': i, 'idx': indexVPuvodnimSloupci};
+            _tahanaPozice = {
+              'col': i,
+              'idx': indexVPuvodnimSloupci,
+              'karty': k,
+            };
           } else if (t == "odpad") {
             _tahamZOdpadu = true;
           }

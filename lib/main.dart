@@ -1,49 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'src/globalni_nastaveni.dart';
+import 'src/app_providers.dart';
 import 'src/vykreslovani.dart';
 import 'src/hra.dart';
 import 'src/pomocne_widgety.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await nactiNastaveni();
-  runApp(const MaterialApp(
-    title: 'Slovní Solitér',
-    debugShowCheckedModeBanner: false,
-    home: HlavniMenu(),
+  // `nactiNastaveni()` je nyní nahrazeno Riverpod providery.
+  // runApp je obalen v ProviderScope, aby byly providery dostupné v celé aplikaci.
+  runApp(const ProviderScope(
+    child: MaterialApp(
+      title: 'Slovní Solitér',
+      debugShowCheckedModeBanner: false,
+      home: HlavniMenu(),
+    ),
   ));
 }
 
-// ============================================================================ 
-// --- HLAVNÍ MENU --- 
-// ============================================================================ 
+// ============================================================================
+// --- HLAVNÍ MENU ---
+// ============================================================================
 
-class HlavniMenu extends StatefulWidget {
+// Převedeno na ConsumerWidget pro integraci s Riverpodem.
+class HlavniMenu extends ConsumerWidget {
   const HlavniMenu({super.key});
-  @override
-  State<HlavniMenu> createState() => _HlavniMenuState();
-}
-
-class _HlavniMenuState extends State<HlavniMenu> {
-  bool existujeUlozeni = false;
 
   @override
-  void initState() {
-    super.initState();
-    zkontrolujUlozeni();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Sledujeme stav provideru, který nám říká, zda existuje uložená hra.
+    final existujeUlozeniAsync = ref.watch(existujeUlozeniProvider);
 
-  void zkontrolujUlozeni() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      existujeUlozeni = prefs.getBool('existujeUlozeni') ?? false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
@@ -106,22 +94,37 @@ class _HlavniMenuState extends State<HlavniMenu> {
                 const SizedBox(height: 30),
 
                 // Tlačítka
-                if (existujeUlozeni) ...[
-                  MenuTlacitko(
-                    text: "POKRAČOVAT",
-                    ikona: Icons.fast_forward,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const SlovniSolitare(nacistUlozenou: true),
-                        ),
-                      ).then((_) => zkontrolujUlozeni());
-                    },
-                  ),
+                // Pomocí .when處理ujeme všechny stavy FutureProvideru
+                existujeUlozeniAsync.when(
+                  // Data úspěšně načtena
+                  data: (existujeUlozeni) {
+                    if (existujeUlozeni) {
+                      return MenuTlacitko(
+                        text: "POKRAČOVAT",
+                        ikona: Icons.fast_forward,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const SlovniSolitare(nacistUlozenou: true),
+                            ),
+                            // Po návratu z hry znovu zkontrolujeme stav
+                          ).then((_) => ref.invalidate(existujeUlozeniProvider));
+                        },
+                      );
+                    }
+                    // Pokud neexistuje uložení, vrátíme prázdný widget
+                    return const SizedBox.shrink();
+                  },
+                  // Během načítání zobrazíme prázdný widget, aby se layout nerozpadl
+                  loading: () => const SizedBox(height: 70), // Výška odpovídá tlačítku
+                  // V případě chyby nezobrazíme nic
+                  error: (err, stack) => const SizedBox.shrink(),
+                ),
+                if (existujeUlozeniAsync.valueOrNull == true)
                   const SizedBox(height: 20),
-                ],
+
                 MenuTlacitko(
                   text: "NOVÁ HRA",
                   ikona: Icons.play_arrow_rounded,
@@ -132,7 +135,8 @@ class _HlavniMenuState extends State<HlavniMenu> {
                         builder: (context) =>
                             const SlovniSolitare(nacistUlozenou: false),
                       ),
-                    ).then((_) => zkontrolujUlozeni());
+                       // Po návratu z hry znovu zkontrolujeme stav
+                    ).then((_) => ref.invalidate(existujeUlozeniProvider));
                   },
                 ),
                 const SizedBox(height: 20),
