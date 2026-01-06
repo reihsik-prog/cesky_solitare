@@ -991,11 +991,11 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
       vyskaKarty = (sirkaKarty * 1.45).floorToDouble(); // Lehce upravený poměr
 
-      posunOdpadu = sirkaKarty * 0.4;
+            posunOdpadu = sirkaKarty * 0.4;
 
-      posunSkrytych = vyskaKarty * 0.18;
+            posunSkrytych = vyskaKarty * 0.20;
 
-      posunOdkrytych = vyskaKarty * 0.4;
+            posunOdkrytych = vyskaKarty * 0.20;
 
   
 
@@ -2389,7 +2389,7 @@ colorFilter: ColorFilter.mode(
                     )
                   else if (jeZakryta)
                     Padding(
-                      padding: EdgeInsets.only(top: vyskaKarty * 0.09, left: 2.0, right: 2.0), // 8.0/85
+                      padding: EdgeInsets.only(top: vyskaKarty * 0.05, left: 2.0, right: 2.0),
                       child: Align(
                         alignment: Alignment.topCenter,
                         child: FittedBox(
@@ -2399,7 +2399,18 @@ colorFilter: ColorFilter.mode(
                             children: [
                               if (k.jeHlavni && getIkona() != null)
                                 Icon(getIkona(), size: sirkaKarty * 0.23, color: Colors.brown[700]),
-                              getObsahKarty()
+                              
+                              // Zde je už upravený text s vlastní velikostí
+                              Text(
+                                k.slovo,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.raleway(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: sirkaKarty * 0.15, // <-- ZDE SI UPRAVTE VELIKOST
+                                  color: const Color(0xFF3E2723),
+                                ),
+                              ),
+
                             ],
                           ),
                         ),
@@ -2435,7 +2446,7 @@ colorFilter: ColorFilter.mode(
                       child: Text(
                         pocitadlo,
                         style: GoogleFonts.rubik(
-                          fontSize: sirkaKarty * 0.14, // 8.5/60
+                          fontSize: sirkaKarty * 0.13, // 8.5/60
                           fontWeight: FontWeight.w600,
                           color: isGray
                               ? Colors.grey[700]
