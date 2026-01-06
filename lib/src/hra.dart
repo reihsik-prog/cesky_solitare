@@ -1653,31 +1653,53 @@ class _SlovniSolitareState extends State<SlovniSolitare>
 
                                                 j >= _tahanaPozice!['idx']!))
 
-                                              Positioned(
+                                                                                            Positioned(
 
-                                                top: (skryteBalicky[idx].length *
+                                                                                              top: (skryteBalicky[idx].length *
 
-                                                        posunSkrytych) +
+                                                                                                      posunSkrytych) +
 
-                                                    (j * posunOdkrytych),
+                                                                                                  (j * posunOdkrytych),
 
-                                                child: tahatelna(
+                                                                                              child: Builder(builder: (context) {
 
-                                                  sloupce[idx].sublist(j),
+                                                                                                final bool jeTentoSloupecTahan =
 
-                                                  "sloupec",
+                                                                                                    _tahanaPozice != null &&
 
-                                                  idx,
+                                                                                                        _tahanaPozice!['col'] == idx;
 
-                                                  indexVPuvodnimSloupci: j,
+                                                                                                final int posledniKartaVPoli =
 
-                                                  jeZakryta: j <
+                                                                                                    jeTentoSloupecTahan
 
-                                                      sloupce[idx].length - 1,
+                                                                                                        ? _tahanaPozice!['idx']! - 1
 
-                                                ),
+                                                                                                        : sloupce[idx].length - 1;
 
-                                              )
+                                                                                                final bool jeKartaZakryta =
+
+                                                                                                    j < posledniKartaVPoli;
+
+                                              
+
+                                                                                                return tahatelna(
+
+                                                                                                  sloupce[idx].sublist(j),
+
+                                                                                                  "sloupec",
+
+                                                                                                  idx,
+
+                                                                                                  indexVPuvodnimSloupci: j,
+
+                                                                                                  jeZakryta: jeKartaZakryta,
+
+                                                                                                );
+
+                                                                                              }),
+
+                                                                                            )
 
                                         ],
 
