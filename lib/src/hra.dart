@@ -12,6 +12,7 @@ import 'data_modely.dart';
 import 'seznam_levelu.dart';
 import 'app_providers.dart';
 import 'vykreslovani.dart';
+import 'score_manager.dart';
 
 // ============================================================================
 // --- HRA (SlovniSolitare) ---
@@ -97,25 +98,31 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-  int get limitTahu {
-
-    int pocetKaret = seznamLevelu[aktualniLevelIndex].karty.length;
-
-    double obtiznost = 2.2;
-
-    return (pocetKaret * obtiznost).toInt();
-
-  }
+    int get limitTahu {
 
 
 
-  int skore = 0;
-
-  int ulozenyZacatekSkore = 0;
+      int pocetKaret = seznamLevelu[aktualniLevelIndex].karty.length;
 
 
 
-  bool jeKonecHryProhra = false;
+      double obtiznost = 2.2;
+
+
+
+      return (pocetKaret * obtiznost).toInt();
+
+
+
+    }
+
+
+
+  
+
+
+
+    bool jeKonecHryProhra = false;
 
   bool rozdavam = false;
 
@@ -174,15 +181,27 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-    if (widget.nacistUlozenou) {
+        if (widget.nacistUlozenou) {
 
-      nactiRozehranouHru();
 
-    } else {
 
-      restartHry(novyLevel: false);
+          nactiRozehranouHru();
 
-    }
+
+
+        } else {
+
+
+
+          SchedulerBinding.instance
+
+
+
+              .addPostFrameCallback((_) => restartHry(novyLevel: false));
+
+
+
+        }
 
   }
 
@@ -240,35 +259,45 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
     await prefs.setString('sloupce', zabalSloupce(sloupce));
 
-    await prefs.setString('skryteBalicky', zabalSloupce(skryteBalicky));
+        await prefs.setString('skryteBalicky', zabalSloupce(skryteBalicky));
 
-    await prefs.setInt('skore', skore);
+        await prefs.setInt('tahy', pocetTahu);
 
-    await prefs.setInt('ulozeneSkore', ulozenyZacatekSkore);
+        await prefs.setInt('level', aktualniLevelIndex);
 
-    await prefs.setInt('tahy', pocetTahu);
+        await prefs.setBool('existujeUlozeni', true);
 
-    await prefs.setInt('level', aktualniLevelIndex);
-
-    await prefs.setBool('existujeUlozeni', true);
-
-    await prefs.setInt('pocetSloupcu', pocetSloupcu);
+        await prefs.setInt('pocetSloupcu', pocetSloupcu);
 
   }
 
 
 
-  void nactiRozehranouHru() async {
+    void nactiRozehranouHru() async {
 
-    final prefs = await SharedPreferences.getInstance();
 
-    if (!prefs.containsKey('existujeUlozeni')) {
 
-      restartHry(novyLevel: false);
+      final prefs = await SharedPreferences.getInstance();
 
-      return;
 
-    }
+
+      if (!prefs.containsKey('existujeUlozeni')) {
+
+
+
+        SchedulerBinding.instance
+
+
+
+            .addPostFrameCallback((_) => restartHry(novyLevel: false));
+
+
+
+        return;
+
+
+
+      }
 
     List<KartaData> rozbalKarty(String json) =>
 
@@ -317,17 +346,13 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
           .toList();
 
-      if (skryteBalicky.length < pocetSloupcu) {
+            if (skryteBalicky.length < pocetSloupcu) {
 
-        skryteBalicky = List.generate(pocetSloupcu, (_) => []);
+              skryteBalicky = List.generate(pocetSloupcu, (_) => []);
 
-      }
+            }
 
-      skore = prefs.getInt('skore') ?? 0;
-
-      ulozenyZacatekSkore = prefs.getInt('ulozeneSkore') ?? 0;
-
-      pocetTahu = prefs.getInt('tahy') ?? 0;
+            pocetTahu = prefs.getInt('tahy') ?? 0;
 
         });
 
@@ -397,78 +422,279 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
     
 
-          void restartHry({bool novyLevel = false}) {
-            _kaskadaTicker?.stop();
-        
-            int levelIndexProNacteni = aktualniLevelIndex;
-            int skoreProUlozeni = ulozenyZacatekSkore;
-        
-            if (novyLevel) {
-              skoreProUlozeni = skore;
-              if (aktualniLevelIndex < seznamLevelu.length - 1) {
-                levelIndexProNacteni++;
-              } else {
-                levelIndexProNacteni = 0;
-                skoreProUlozeni = 0;
-              }
-            }
-        
-            final level = seznamLevelu[levelIndexProNacteni];
-            final pocetSloupcuProPlan = level.pocetSloupcu;
-            _sloupecDropTargetKeys =
-                List.generate(pocetSloupcuProPlan, (_) => GlobalKey());
-        
-            List<int> ciloveSkryte =
-                List.generate(pocetSloupcuProPlan, (_) => _rnd.nextInt(3));
-            ciloveSkryte.shuffle();
-        
-            _akceRozdavani.clear();
-            int maxSkrytych = ciloveSkryte.isNotEmpty ? ciloveSkryte.reduce(max) : -1;
-        
-            for (int radek = 0; radek < maxSkrytych + 1; radek++) {
-              for (int s = 0; s < pocetSloupcuProPlan; s++) {
-                if (radek < ciloveSkryte[s]) {
-                  _akceRozdavani.add({'col': s, 'rub': true});
-                } else if (radek == ciloveSkryte[s]) {
-                  _akceRozdavani.add({'col': s, 'rub': false});
-                }
-              }
-            }
-        
-            setState(() {
-              rozdavam = true;
-        
-              if (novyLevel) {
-                 aktualniLevelIndex = levelIndexProNacteni;
-                 ulozenyZacatekSkore = skoreProUlozeni;
-              }
-        
-              pocetSloupcu = level.pocetSloupcu;
-              skore = ulozenyZacatekSkore;
-              balicek = List.from(level.karty);
-              balicek.shuffle();
-        
-              odpad = [];
-        
-              var unikatniIds = balicek.map((e) => e.kategorieId).toSet().toList();
-              idsKategoriiProCile = unikatniIds;
-        
-              cile = List.generate(unikatniIds.length, (_) => <KartaData>[]);
-              _cilKeys = List.generate(unikatniIds.length, (_) => GlobalKey());
-        
-              sloupce = List.generate(pocetSloupcu, (_) => []);
-              skryteBalicky = List.generate(pocetSloupcu, (_) => []);
-        
-              archiv = [];
-              kaskada = [];
-              pocetTahu = 0;
-              jeKonecHryProhra = false;
-              _tahanaPozice = null;
-            });
-        
-            _rozdavaciIndex = 0;
-            Future.delayed(Duration.zero, _provedDalsiKrokRozdavani);
-          }
+                    void restartHry({bool novyLevel = false}) {
+
+    
+
+                      _kaskadaTicker?.stop();
+
+    
+
+                  
+
+    
+
+                      ref.read(scoreManagerProvider.notifier).resetForNewGame();
+
+    
+
+                  
+
+    
+
+                      int levelIndexProNacteni = aktualniLevelIndex;
+
+    
+
+                  
+
+    
+
+                      if (novyLevel) {
+
+    
+
+                        if (aktualniLevelIndex < seznamLevelu.length - 1) {
+
+    
+
+                          levelIndexProNacteni++;
+
+    
+
+                        } else {
+
+    
+
+                          levelIndexProNacteni = 0;
+
+    
+
+                        }
+
+    
+
+                      }
+
+    
+
+                  
+
+    
+
+                      final level = seznamLevelu[levelIndexProNacteni];
+
+    
+
+                      final pocetSloupcuProPlan = level.pocetSloupcu;
+
+    
+
+                  
+
+    
+
+                      List<int> ciloveSkryte =
+
+    
+
+                          List.generate(pocetSloupcuProPlan, (_) => _rnd.nextInt(3));
+
+    
+
+                      ciloveSkryte.shuffle();
+
+    
+
+                  
+
+    
+
+                      _akceRozdavani.clear();
+
+    
+
+                      int maxSkrytych = ciloveSkryte.isNotEmpty ? ciloveSkryte.reduce(max) : -1;
+
+    
+
+                  
+
+    
+
+                      for (int radek = 0; radek < maxSkrytych + 1; radek++) {
+
+    
+
+                        for (int s = 0; s < pocetSloupcuProPlan; s++) {
+
+    
+
+                          if (radek < ciloveSkryte[s]) {
+
+    
+
+                            _akceRozdavani.add({'col': s, 'rub': true});
+
+    
+
+                          } else if (radek == ciloveSkryte[s]) {
+
+    
+
+                            _akceRozdavani.add({'col': s, 'rub': false});
+
+    
+
+                          }
+
+    
+
+                        }
+
+    
+
+                      }
+
+    
+
+                  
+
+    
+
+                      setState(() {
+
+    
+
+                        rozdavam = true;
+
+    
+
+                  
+
+    
+
+                        if (novyLevel) {
+
+    
+
+                           aktualniLevelIndex = levelIndexProNacteni;
+
+    
+
+                        }
+
+    
+
+                  
+
+    
+
+                        pocetSloupcu = level.pocetSloupcu;
+
+    
+
+                        _sloupecDropTargetKeys =
+
+    
+
+                            List.generate(pocetSloupcu, (_) => GlobalKey());
+
+    
+
+                        balicek = List.from(level.karty);
+
+    
+
+                        balicek.shuffle();
+
+    
+
+                  
+
+    
+
+                        odpad = [];
+
+    
+
+                  
+
+    
+
+                        var unikatniIds = balicek.map((e) => e.kategorieId).toSet().toList();
+
+    
+
+                        idsKategoriiProCile = unikatniIds;
+
+    
+
+                  
+
+    
+
+                        cile = List.generate(unikatniIds.length, (_) => <KartaData>[]);
+
+    
+
+                        _cilKeys = List.generate(unikatniIds.length, (_) => GlobalKey());
+
+    
+
+                  
+
+    
+
+                        sloupce = List.generate(pocetSloupcu, (_) => []);
+
+    
+
+                        skryteBalicky = List.generate(pocetSloupcu, (_) => []);
+
+    
+
+                  
+
+    
+
+                        archiv = [];
+
+    
+
+                        kaskada = [];
+
+    
+
+                        pocetTahu = 0;
+
+    
+
+                        jeKonecHryProhra = false;
+
+    
+
+                        _tahanaPozice = null;
+
+    
+
+                      });
+
+    
+
+                  
+
+    
+
+                      _rozdavaciIndex = 0;
+
+    
+
+                      Future.delayed(Duration.zero, _provedDalsiKrokRozdavani);
+
+    
+
+                    }
 
 
 
@@ -484,21 +710,55 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-  void _startKaskada() {
-
-    int zbyvajiciTahy = limitTahu - pocetTahu;
-
-    if (zbyvajiciTahy > 0) setState(() => skore += zbyvajiciTahy * 1);
+    void _startKaskada() {
 
 
 
-    List<KartaData> vsechnyHotove = List.from(archiv);
+      int zbyvajiciTahy = limitTahu - pocetTahu;
 
-    for (var seznam in cile) {
 
-      vsechnyHotove.addAll(seznam);
 
-    }
+      final scoreNotifier = ref.read(scoreManagerProvider.notifier);
+
+
+
+  
+
+
+
+      if (zbyvajiciTahy > 0) {
+
+
+
+        scoreNotifier.calculateWinBonus(zbyvajiciTahy);
+
+
+
+      }
+
+
+
+      scoreNotifier.endGame();
+
+
+
+  
+
+
+
+      List<KartaData> vsechnyHotove = List.from(archiv);
+
+
+
+      for (var seznam in cile) {
+
+
+
+        vsechnyHotove.addAll(seznam);
+
+
+
+      }
 
 
 
@@ -675,25 +935,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-      if (!muze) {
-
-
-
-        setState(() => skore = max(0, skore - 5));
-
-
-
-        if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
-          HapticFeedback.heavyImpact();
-        }
-
-
-
-        return;
-
-
-
-      }
+            if (!muze) {
 
 
 
@@ -701,15 +943,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-      setState(() {
-
-
-
-        pocetTahu++;
-
-
-
-        if (kam != "cil" || !prvni.jeHlavni) skore += 10;
+              if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
 
 
 
@@ -717,47 +951,223 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-        if (data['t'] == "odpad") {
+                HapticFeedback.heavyImpact();
 
 
 
-          odpad.removeLast();
+  
 
 
 
-        } else if (data['t'] == "sloupec") {
+              }
 
 
 
-          int odkudIdx = data['i'];
+  
 
 
 
-          sloupce[odkudIdx].removeRange(
+              return;
 
 
 
-              sloupce[odkudIdx].length - tahaneKarty.length,
+  
 
 
 
-              sloupce[odkudIdx].length);
+            }
 
 
 
-          if (sloupce[odkudIdx].isEmpty && skryteBalicky[odkudIdx].isNotEmpty) {
+  
 
 
 
-            sloupce[odkudIdx].add(skryteBalicky[odkudIdx].removeLast());
+      
 
 
 
-          }
+  
 
 
 
-        }
+            final scoreNotifier = ref.read(scoreManagerProvider.notifier);
+
+
+
+  
+
+
+
+      
+
+
+
+  
+
+
+
+            setState(() {
+
+
+
+  
+
+
+
+              pocetTahu++;
+
+
+
+  
+
+
+
+      
+
+
+
+  
+
+
+
+              // Bodování podle nových pravidel
+
+
+
+  
+
+
+
+              if (kam == "sloupec") {
+
+
+
+  
+
+
+
+                scoreNotifier.cardToTableau();
+
+
+
+  
+
+
+
+              } else if (kam == "cil") {
+
+
+
+  
+
+
+
+                scoreNotifier.cardToFoundation(cardCount: tahaneKarty.length);
+
+
+
+  
+
+
+
+              }
+
+
+
+  
+
+
+
+      
+
+
+
+  
+
+
+
+              if (data['t'] == "odpad") {
+
+
+
+  
+
+
+
+                odpad.removeLast();
+
+
+
+  
+
+
+
+              } else if (data['t'] == "sloupec") {
+
+
+
+  
+
+
+
+                int odkudIdx = data['i'];
+
+
+
+  
+
+
+
+                sloupce[odkudIdx].removeRange(
+
+
+
+  
+
+
+
+                    sloupce[odkudIdx].length - tahaneKarty.length,
+
+
+
+  
+
+
+
+                    sloupce[odkudIdx].length);
+
+
+
+  
+
+
+
+                if (sloupce[odkudIdx].isEmpty && skryteBalicky[odkudIdx].isNotEmpty) {
+
+
+
+  
+
+
+
+                  sloupce[odkudIdx].add(skryteBalicky[odkudIdx].removeLast());
+
+
+
+  
+
+
+
+                }
+
+
+
+  
+
+
+
+              }
 
 
 
@@ -891,6 +1301,25 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
     }
 
+  void _provedUndo() {
+    final scoreNotifier = ref.read(scoreManagerProvider.notifier);
+
+    if (scoreNotifier.canUseUndo()) {
+      scoreNotifier.useUndo();
+
+      // ZDE PŘIJDE LOGIKA PRO VRÁCENÍ STAVU HRY
+      // Např. načtení posledního stavu z historie a jeho obnovení.
+      // Prozatím po stisku dojde jen ke změně skóre/tokenů.
+      debugPrint("Akce Zpět provedena, herní stav je třeba vrátit manuálně.");
+
+      // Po implementaci historie stavů zde zavoláte setState, aby se UI překreslilo.
+
+    } else {
+      // Volitelně: Zobrazit zprávu, že nelze provést (např. v snackbaru)
+      debugPrint("Akci Zpět nelze provést - nedostatek bodů nebo tokenů.");
+    }
+  }
+
   void zobrazitHerniMenu() {
     showDialog(
       context: context,
@@ -967,8 +1396,6 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
                               onTap: () {
                                 Navigator.of(context).pop();
                                 aktualniLevelIndex = index;
-                                ulozenyZacatekSkore = 0;
-                                skore = 0;
                                 restartHry(novyLevel: false);
                               },
                             );
@@ -1896,191 +2323,261 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
                 top: 80,
 
-                child: Container(
+                                child: Container(
 
-                  // Padding (vycpávka) zmenšena na minimum (jen 4 px)
+                                  // Padding (vycpávka) zmenšena na minimum (jen 4 px)
 
-                  padding:
+                                  padding:
 
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                      const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
 
-                  decoration: BoxDecoration(
+                                  decoration: BoxDecoration(
 
-                    gradient: LinearGradient(
+                                    gradient: LinearGradient(
 
-                      begin: Alignment.topLeft,
+                                      begin: Alignment.topLeft,
 
-                      end: Alignment.bottomRight,
+                                      end: Alignment.bottomRight,
 
-                      colors: [
+                                      colors: [
 
-                        Colors.black.withAlpha(26),
+                                        Colors.black.withAlpha(26),
 
-                        Colors.black.withAlpha(3)
+                                        Colors.black.withAlpha(3)
 
-                      ],
+                                      ],
 
-                    ),
+                                    ),
 
-                    // Zaoblení jen vlevo
+                                    // Zaoblení jen vlevo
 
-                    borderRadius: const BorderRadius.only(
+                                    borderRadius: const BorderRadius.only(
 
-                      topLeft: Radius.circular(12),
+                                      topLeft: Radius.circular(12),
 
-                      bottomLeft: Radius.circular(12),
+                                      bottomLeft: Radius.circular(12),
 
-                    ),
+                                    ),
 
-                    border:
+                                    border:
 
-                        Border.all(color: Colors.white.withAlpha(26), width: 1),
+                                        Border.all(color: Colors.white.withAlpha(26), width: 1),
 
-                    boxShadow: [
+                                    boxShadow: [
 
-                      BoxShadow(
+                                      BoxShadow(
 
-                        color: Colors.black.withAlpha(77),
+                                        color: Colors.black.withAlpha(77),
 
-                        blurRadius: 10,
+                                        blurRadius: 10,
 
-                        offset: const Offset(4, 4),
+                                        offset: const Offset(4, 4),
 
-                      )
+                                      )
 
-                    ],
+                                    ],
 
-                  ),
+                                  ),
 
-                  child: Column(
+                                  child: Consumer(
 
-                    mainAxisSize: MainAxisSize.min,
+                                    builder: (context, ref, child) {
 
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                                      final scoreState = ref.watch(scoreManagerProvider);
 
-                    children: [
+                                      return Column(
 
-                      // MENU IKONA
+                                        mainAxisSize: MainAxisSize.min,
 
-                      IconButton(
+                                        crossAxisAlignment: CrossAxisAlignment.center,
 
-                        icon: const Icon(Icons.settings,
+                                        children: [
 
-                            color: Colors.amber,
+                                          // MENU IKONA
 
-                            size: 18), // Ještě menší ikona
+                                          IconButton(
 
-                        onPressed: zobrazitHerniMenu,
+                                            icon: const Icon(Icons.settings, color: Colors.amber, size: 18),
 
-                        padding: EdgeInsets.zero,
+                                            onPressed: zobrazitHerniMenu,
 
-                        constraints: const BoxConstraints(),
+                                            padding: EdgeInsets.zero,
 
-                        tooltip: "Menu",
+                                            constraints: const BoxConstraints(),
 
-                      ),
+                                            tooltip: "Menu",
 
-  
+                                          ),
 
-                      Container(
+                
 
-                          margin: const EdgeInsets.symmetric(vertical: 4),
+                                          Container(margin: const EdgeInsets.symmetric(vertical: 4), width: 15, height: 1, color: Colors.white12),
 
-                          width: 15,
+                
 
-                          height: 1,
+                                          // TLAČÍTKO ZPĚT (UNDO)
 
-                          color: Colors.white12),
+                                          IconButton(
 
-  
+                                            icon: const Icon(Icons.undo, color: Colors.white, size: 18),
 
-                      // TAHY
+                                            onPressed: _provedUndo,
 
-                      Column(
+                                            padding: EdgeInsets.zero,
 
-                        mainAxisSize: MainAxisSize.min,
+                                            constraints: const BoxConstraints(),
 
-                        children: [
+                                            tooltip: "Zpět",
 
-                          Icon(Icons.directions_walk,
+                                          ),
 
-                              size: 10,
+                                          Text(
 
-                              color: zbyvaTahu <= 5
+                                            !scoreState.firstUndoUsed ? "(-50b)" : "x${scoreState.undoTokens}",
 
-                                  ? Colors.redAccent
+                                            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 9, fontWeight: FontWeight.bold),
 
-                                  : Colors.amber),
+                                          ),
 
-                          Text("$zbyvaTahu",
+                
 
-                              style: TextStyle(
+                
 
-                                  fontSize: 13, // Menší číslo (bylo 15)
+                                          Container(margin: const EdgeInsets.symmetric(vertical: 8), width: 20, height: 1, color: Colors.white12),
 
-                                  color: zbyvaTahu <= 5
+                
 
-                                      ? Colors.redAccent
+                                          // TAHY
 
-                                      : Colors.white,
+                                          Column(
 
-                                  fontWeight: FontWeight.w900,
+                                            children: [
 
-                                  fontFamily: 'monospace')),
+                                              const Icon(Icons.swap_horiz, color: Colors.white38, size: 14),
 
-                        ],
+                                              const SizedBox(height: 2),
 
-                      ),
+                                              Text(
 
-  
+                                                "$zbyvaTahu",
 
-                      Container(
+                                                style: GoogleFonts.oswald(
 
-                          margin: const EdgeInsets.symmetric(vertical: 4),
+                                                  textStyle: const TextStyle(
 
-                          width: 15,
+                                                    fontSize: 16,
 
-                          height: 1,
+                                                    color: Colors.white,
 
-                          color: Colors.white12),
+                                                    fontWeight: FontWeight.w700,
 
-  
+                                                  ),
 
-                      // SKÓRE
+                                                ),
 
-                      Column(
+                                              ),
 
-                        mainAxisSize: MainAxisSize.min,
+                                            ],
 
-                        children: [
+                                          ),
 
-                          const Icon(Icons.emoji_events,
+                                          const SizedBox(height: 12),
 
-                              size: 10, color: Colors.amber),
+                
 
-                          Text("$skore",
+                                          // SKÓRE
 
-                              style: const TextStyle(
+                                          Column(
 
-                                  fontSize: 13, // Menší číslo (bylo 15)
+                                            children: [
 
-                                  color: Colors.amber,
+                                              const Icon(Icons.emoji_events, color: Colors.white38, size: 14),
 
-                                  fontWeight: FontWeight.w900,
+                                              const SizedBox(height: 2),
 
-                                  fontFamily: 'monospace')),
+                                              Text(
 
-                        ],
+                                                "${scoreState.score}",
 
-                      ),
+                                                style: GoogleFonts.oswald(
 
-                    ],
+                                                  textStyle: const TextStyle(
 
-                  ),
+                                                    fontSize: 16,
 
-                ),
+                                                    color: Colors.white,
 
-              ),
+                                                    fontWeight: FontWeight.w700,
+
+                                                  ),
+
+                                                ),
+
+                                              ),
+
+                                            ],
+
+                                          ),
+
+                                           const SizedBox(height: 12),
+
+                
+
+                                                                    // MINCE
+
+                
+
+                                                                    Column(
+
+                
+
+                                                                      children: [
+
+                
+
+                                                                        Icon(Icons.monetization_on, color: Colors.amber.withOpacity(0.7), size: 14),
+
+                
+
+                                                                        const SizedBox(height: 2),
+
+                
+
+                                                                        Text(
+
+                                                "${scoreState.coins}",
+
+                                                style: GoogleFonts.oswald(
+
+                                                  textStyle: const TextStyle(
+
+                                                    fontSize: 16,
+
+                                                    color: Colors.white,
+
+                                                    fontWeight: FontWeight.w700,
+
+                                                  ),
+
+                                                ),
+
+                                              ),
+
+                                            ],
+
+                                          ),
+
+                                        ],
+
+                                      );
+
+                                    }
+
+                                  ),
+
+                                ),
+
+                              ),
 
   
 
@@ -2470,11 +2967,11 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
                       const SizedBox(height: 10),
 
-                      Text(
+                                            Text(
 
-                        "Získané skóre: $skore",
+                                              "Získané skóre: ${ref.watch(scoreManagerProvider).score}",
 
-                        style: const TextStyle(
+                                              style: const TextStyle(
 
                             color: Colors.white,
 
@@ -2538,11 +3035,11 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
                     children: [
 
-                      Text(
+                                            Text(
 
-                        "VÍTĚZSTVÍ! SKÓRE: $skore",
+                                              "VÍTĚZSTVÍ! SKÓRE: ${ref.watch(scoreManagerProvider).score}",
 
-                        style: const TextStyle(
+                                              style: const TextStyle(
 
                           fontSize: 24,
 
