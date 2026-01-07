@@ -1468,25 +1468,25 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
                               children: [
 
-                                // Horní CÍLE
+                                                                // Horní CÍLE
 
-                                SizedBox(
+                                                                SizedBox(
 
-                                  height: vyskaKarty * 0.3, // 26/85
+                                                                  height: vyskaKarty * 0.2,
 
-                                  child: !cilExistuje || cile[idx].isEmpty
+                                                                  child: !cilExistuje || cile[idx].isEmpty
 
-                                      ? null
+                                                                                                              ? null
 
-                                      : Container(
+                                                                                                                                                                                                                            : Container(
 
-                                          width: sirkaKarty,
+                                                                                                                                                                                                                                width: sirkaKarty,
 
-                                          margin:
+                                                                                                                                                                                                                                margin:
 
-                                              const EdgeInsets.only(bottom: 2),
+                                                                                                                                                                                                                                    const EdgeInsets.only(bottom: 2),
 
-                                          decoration: BoxDecoration(
+                                                                                                                  decoration: BoxDecoration(
 
                                               color: const Color.fromARGB(
 
