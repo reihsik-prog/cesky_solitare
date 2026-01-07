@@ -398,256 +398,76 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
     
 
           void restartHry({bool novyLevel = false}) {
-
-    
-
             _kaskadaTicker?.stop();
-
-    
-
         
-
-    
-
-            final level = seznamLevelu[aktualniLevelIndex];
-
-    
-
+            int levelIndexProNacteni = aktualniLevelIndex;
+            int skoreProUlozeni = ulozenyZacatekSkore;
+        
+            if (novyLevel) {
+              skoreProUlozeni = skore;
+              if (aktualniLevelIndex < seznamLevelu.length - 1) {
+                levelIndexProNacteni++;
+              } else {
+                levelIndexProNacteni = 0;
+                skoreProUlozeni = 0;
+              }
+            }
+        
+            final level = seznamLevelu[levelIndexProNacteni];
             final pocetSloupcuProPlan = level.pocetSloupcu;
-    
             _sloupecDropTargetKeys =
                 List.generate(pocetSloupcuProPlan, (_) => GlobalKey());
-
-    
-
+        
             List<int> ciloveSkryte =
-
-    
-
                 List.generate(pocetSloupcuProPlan, (_) => _rnd.nextInt(3));
-
-    
-
             ciloveSkryte.shuffle();
-
-    
-
         
-
-    
-
             _akceRozdavani.clear();
-
-    
-
             int maxSkrytych = ciloveSkryte.isNotEmpty ? ciloveSkryte.reduce(max) : -1;
-
-    
-
         
-
-    
-
             for (int radek = 0; radek < maxSkrytych + 1; radek++) {
-
-    
-
               for (int s = 0; s < pocetSloupcuProPlan; s++) {
-
-    
-
                 if (radek < ciloveSkryte[s]) {
-
-    
-
                   _akceRozdavani.add({'col': s, 'rub': true});
-
-    
-
                 } else if (radek == ciloveSkryte[s]) {
-
-    
-
                   _akceRozdavani.add({'col': s, 'rub': false});
-
-    
-
                 }
-
-    
-
               }
-
-    
-
             }
-
-    
-
         
-
-    
-
             setState(() {
-
-    
-
               rozdavam = true;
-
-    
-
         
-
-    
-
               if (novyLevel) {
-
-    
-
-                ulozenyZacatekSkore = skore;
-
-    
-
-                if (aktualniLevelIndex < seznamLevelu.length - 1) {
-
-    
-
-                  aktualniLevelIndex++;
-
-    
-
-                } else {
-
-    
-
-                  aktualniLevelIndex = 0;
-
-    
-
-                  ulozenyZacatekSkore = 0;
-
-    
-
-                }
-
-    
-
+                 aktualniLevelIndex = levelIndexProNacteni;
+                 ulozenyZacatekSkore = skoreProUlozeni;
               }
-
-    
-
         
-
-    
-
               pocetSloupcu = level.pocetSloupcu;
-
-    
-
-        
-
-    
-
               skore = ulozenyZacatekSkore;
-
-    
-
               balicek = List.from(level.karty);
-
-    
-
               balicek.shuffle();
-
-    
-
         
-
-    
-
               odpad = [];
-
-    
-
         
-
-    
-
               var unikatniIds = balicek.map((e) => e.kategorieId).toSet().toList();
-
-    
-
               idsKategoriiProCile = unikatniIds;
-
-    
-
         
-
-    
-
               cile = List.generate(unikatniIds.length, (_) => <KartaData>[]);
-
-    
-
-        
-
-    
-
               _cilKeys = List.generate(unikatniIds.length, (_) => GlobalKey());
-
-    
-
         
-
-    
-
               sloupce = List.generate(pocetSloupcu, (_) => []);
-
-    
-
               skryteBalicky = List.generate(pocetSloupcu, (_) => []);
-
-    
-
         
-
-    
-
               archiv = [];
-
-    
-
               kaskada = [];
-
-    
-
               pocetTahu = 0;
-
-    
-
               jeKonecHryProhra = false;
-
-    
-
               _tahanaPozice = null;
-
-    
-
             });
-
-    
-
         
-
-    
-
             _rozdavaciIndex = 0;
-
-    
-
             Future.delayed(Duration.zero, _provedDalsiKrokRozdavani);
-
-    
-
           }
 
 
