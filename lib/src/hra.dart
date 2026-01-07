@@ -13,6 +13,7 @@ import 'seznam_levelu.dart';
 import 'app_providers.dart';
 import 'vykreslovani.dart';
 import 'score_manager.dart';
+import 'konec_levelu_obrazovka.dart';
 
 // ============================================================================
 // --- HRA (SlovniSolitare) ---
@@ -28,6 +29,9 @@ class SlovniSolitare extends ConsumerStatefulWidget {
 class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
     with TickerProviderStateMixin {
+
+  int? _finalScore;
+  int? _finalCoins;
 
   // --- Responzivní velikosti ---
 
@@ -95,6 +99,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
   int pocetTahu = 0;
+  List<Map<String, String>> herniHistorie = [];
 
 
 
@@ -273,94 +278,563 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-    void nactiRozehranouHru() async {
+        void nactiRozehranouHru() async {
 
 
-
-      final prefs = await SharedPreferences.getInstance();
-
-
-
-      if (!prefs.containsKey('existujeUlozeni')) {
-
-
-
-        SchedulerBinding.instance
-
-
-
-            .addPostFrameCallback((_) => restartHry(novyLevel: false));
-
-
-
-        return;
-
-
-
-      }
-
-    List<KartaData> rozbalKarty(String json) =>
-
-        (jsonDecode(json) as List).map((i) => KartaData.fromJson(i)).toList();
-
-
-
-    setState(() {
-
-      aktualniLevelIndex = prefs.getInt('level') ?? 0;
-
-      pocetSloupcu = prefs.getInt('pocetSloupcu') ?? 4;
-      _sloupecDropTargetKeys = List.generate(pocetSloupcu, (_) => GlobalKey());
-
-      balicek = rozbalKarty(prefs.getString('balicek') ?? "[]");
-
-      odpad = rozbalKarty(prefs.getString('odpad') ?? "[]");
-
-      archiv = rozbalKarty(prefs.getString('archiv') ?? "[]");
-
-      var cileRaw = jsonDecode(prefs.getString('cile') ?? "[]") as List;
-
-            cile = cileRaw
-
-                .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
-
-                .toList();
-
-            _cilKeys = List.generate(cile.length, (_) => GlobalKey());
-
-            var sloupceRaw = jsonDecode(prefs.getString('sloupce') ?? "[]") as List;
-
-      sloupce = sloupceRaw
-
-          .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
-
-          .toList();
-
-      var skryteRaw =
-
-          jsonDecode(prefs.getString('skryteBalicky') ?? "[]") as List;
-
-      skryteBalicky = skryteRaw
-
-          .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
-
-          .toList();
-
-            if (skryteBalicky.length < pocetSloupcu) {
-
-              skryteBalicky = List.generate(pocetSloupcu, (_) => []);
-
-            }
-
-            pocetTahu = prefs.getInt('tahy') ?? 0;
-
-        });
-
-      }
 
     
 
-      void _provedDalsiKrokRozdavani() {
+
+
+    
+
+
+
+    
+
+
+
+          final prefs = await SharedPreferences.getInstance();
+
+
+
+    
+
+
+
+    
+
+
+
+    
+
+
+
+          if (!prefs.containsKey('existujeUlozeni')) {
+
+
+
+    
+
+
+
+    
+
+
+
+    
+
+
+
+            SchedulerBinding.instance
+
+
+
+    
+
+
+
+    
+
+
+
+    
+
+
+
+                .addPostFrameCallback((_) => restartHry(novyLevel: false));
+
+
+
+    
+
+
+
+    
+
+
+
+    
+
+
+
+            return;
+
+
+
+    
+
+
+
+    
+
+
+
+    
+
+
+
+          }
+
+
+
+    
+
+
+
+        List<KartaData> rozbalKarty(String json) =>
+
+
+
+    
+
+
+
+            (jsonDecode(json) as List).map((i) => KartaData.fromJson(i)).toList();
+
+
+
+    
+
+
+
+    
+
+
+
+    
+
+
+
+        setState(() {
+
+
+
+    
+
+
+
+          aktualniLevelIndex = prefs.getInt('level') ?? 0;
+
+
+
+    
+
+
+
+          pocetSloupcu = prefs.getInt('pocetSloupcu') ?? 4;
+
+
+
+          _sloupecDropTargetKeys = List.generate(pocetSloupcu, (_) => GlobalKey());
+
+
+
+    
+
+
+
+          balicek = rozbalKarty(prefs.getString('balicek') ?? "[]");
+
+
+
+    
+
+
+
+          odpad = rozbalKarty(prefs.getString('odpad') ?? "[]");
+
+
+
+    
+
+
+
+          archiv = rozbalKarty(prefs.getString('archiv') ?? "[]");
+
+
+
+    
+
+
+
+          var cileRaw = jsonDecode(prefs.getString('cile') ?? "[]") as List;
+
+
+
+    
+
+
+
+                cile = cileRaw
+
+
+
+    
+
+
+
+                    .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
+
+
+
+    
+
+
+
+                    .toList();
+
+
+
+    
+
+
+
+                _cilKeys = List.generate(cile.length, (_) => GlobalKey());
+
+
+
+    
+
+
+
+                var sloupceRaw = jsonDecode(prefs.getString('sloupce') ?? "[]") as List;
+
+
+
+    
+
+
+
+          sloupce = sloupceRaw
+
+
+
+    
+
+
+
+              .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
+
+
+
+    
+
+
+
+              .toList();
+
+
+
+    
+
+
+
+          var skryteRaw =
+
+
+
+    
+
+
+
+              jsonDecode(prefs.getString('skryteBalicky') ?? "[]") as List;
+
+
+
+    
+
+
+
+          skryteBalicky = skryteRaw
+
+
+
+    
+
+
+
+              .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
+
+
+
+    
+
+
+
+              .toList();
+
+
+
+    
+
+
+
+                if (skryteBalicky.length < pocetSloupcu) {
+
+
+
+    
+
+
+
+                  skryteBalicky = List.generate(pocetSloupcu, (_) => []);
+
+
+
+    
+
+
+
+                }
+
+
+
+    
+
+
+
+                pocetTahu = prefs.getInt('tahy') ?? 0;
+
+
+
+    
+
+
+
+            });
+
+
+
+    
+
+
+
+          }
+
+
+
+    
+
+
+
+    
+
+
+
+      void ulozStavDoHistorie() {
+
+
+
+        String zabalKarty(List<KartaData> list) =>
+
+
+
+            jsonEncode(list.map((k) => k.toJson()).toList());
+
+
+
+        String zabalSloupce(List<List<KartaData>> list) => jsonEncode(
+
+
+
+            list.map((l) => l.map((k) => k.toJson()).toList()).toList());
+
+
+
+    
+
+
+
+        final stav = {
+
+
+
+          'balicek': zabalKarty(balicek),
+
+
+
+          'odpad': zabalKarty(odpad),
+
+
+
+          'cile': zabalSloupce(cile),
+
+
+
+          'sloupce': zabalSloupce(sloupce),
+
+
+
+          'skryteBalicky': zabalSloupce(skryteBalicky),
+
+
+
+          'pocetTahu': pocetTahu.toString(),
+
+
+
+          'archiv': zabalKarty(archiv),
+
+
+
+        };
+
+
+
+    
+
+
+
+        // Omezení historie na 20 kroků
+
+
+
+        if (herniHistorie.length > 20) {
+
+
+
+          herniHistorie.removeAt(0);
+
+
+
+        }
+
+
+
+        herniHistorie.add(stav);
+
+
+
+      }
+
+
+
+    
+
+
+
+      void obnovStavZHistorie() {
+
+
+
+        if (herniHistorie.isEmpty) return;
+
+
+
+    
+
+
+
+        final stav = herniHistorie.removeLast();
+
+
+
+    
+
+
+
+        List<KartaData> rozbalKarty(String json) =>
+
+
+
+            (jsonDecode(json) as List).map((i) => KartaData.fromJson(i)).toList();
+
+
+
+    
+
+
+
+        setState(() {
+
+
+
+          balicek = rozbalKarty(stav['balicek']!);
+
+
+
+          odpad = rozbalKarty(stav['odpad']!);
+
+
+
+          var cileRaw = jsonDecode(stav['cile']!) as List;
+
+
+
+          cile = cileRaw
+
+
+
+              .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
+
+
+
+              .toList();
+
+
+
+          var sloupceRaw = jsonDecode(stav['sloupce']!) as List;
+
+
+
+          sloupce = sloupceRaw
+
+
+
+              .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
+
+
+
+              .toList();
+
+
+
+          var skryteRaw =
+
+
+
+              jsonDecode(stav['skryteBalicky']!) as List;
+
+
+
+          skryteBalicky = skryteRaw
+
+
+
+              .map((l) => (l as List).map((i) => KartaData.fromJson(i)).toList())
+
+
+
+              .toList();
+
+
+
+          archiv = rozbalKarty(stav['archiv']!);
+
+
+
+          pocetTahu = int.parse(stav['pocetTahu']!);
+
+
+
+          jeKonecHryProhra = false;
+
+
+
+        });
+
+
+
+      }
+
+
+
+        
+
+
+
+          void _provedDalsiKrokRozdavani() {
 
         if (_rozdavaciIndex >= _akceRozdavani.length || balicek.isEmpty) {
 
@@ -710,35 +1184,67 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-    void _startKaskada() {
+        void _startKaskada() {
 
 
 
-      int zbyvajiciTahy = limitTahu - pocetTahu;
+    
 
 
 
-      final scoreNotifier = ref.read(scoreManagerProvider.notifier);
+          final scoreNotifier = ref.read(scoreManagerProvider.notifier);
 
 
 
-  
+          final currentScore = ref.read(scoreManagerProvider).score;
 
 
 
-      if (zbyvajiciTahy > 0) {
+          final zbyvajiciTahy = limitTahu - pocetTahu;
 
 
 
-        scoreNotifier.calculateWinBonus(zbyvajiciTahy);
+          final bonus = zbyvajiciTahy > 0 ? zbyvajiciTahy * 50 : 0;
 
 
 
-      }
+    
 
 
 
-      scoreNotifier.endGame();
+          setState(() {
+
+
+
+            _finalScore = currentScore + bonus;
+
+
+
+            _finalCoins = _finalScore! ~/ 100;
+
+
+
+          });
+
+
+
+    
+
+
+
+          if (zbyvajiciTahy > 0) {
+
+
+
+            scoreNotifier.calculateWinBonus(zbyvajiciTahy);
+
+
+
+          }
+
+
+
+          scoreNotifier.endGame();
 
 
 
@@ -819,27 +1325,59 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-  void lizni() {
-
-    if (rozdavam) return;
-
-    if (jeKonecHryProhra) return;
-
-    if (balicek.isEmpty && odpad.isEmpty) return;
-
-    if (_lizaciController!.isAnimating) return;
-
-    if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
-      HapticFeedback.lightImpact();
-    }
+    void lizni() {
 
 
 
-    setState(() {
+      if (rozdavam) return;
 
-      pocetTahu++;
 
-      if (balicek.isNotEmpty) {
+
+      if (jeKonecHryProhra) return;
+
+
+
+      if (balicek.isEmpty && odpad.isEmpty) return;
+
+
+
+      if (_lizaciController!.isAnimating) return;
+
+
+
+      if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
+
+
+
+        HapticFeedback.lightImpact();
+
+
+
+      }
+
+
+
+  
+
+
+
+      ulozStavDoHistorie();
+
+
+
+  
+
+
+
+      setState(() {
+
+
+
+        pocetTahu++;
+
+
+
+        if (balicek.isNotEmpty) {
 
         _leticiKarta = balicek.removeAt(0);
 
@@ -976,6 +1514,8 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
             }
+
+            ulozStavDoHistorie();
 
 
 
@@ -1302,21 +1842,16 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
     }
 
   void _provedUndo() {
-    final scoreNotifier = ref.read(scoreManagerProvider.notifier);
-
-    if (scoreNotifier.canUseUndo()) {
-      scoreNotifier.useUndo();
-
-      // ZDE PŘIJDE LOGIKA PRO VRÁCENÍ STAVU HRY
-      // Např. načtení posledního stavu z historie a jeho obnovení.
-      // Prozatím po stisku dojde jen ke změně skóre/tokenů.
-      debugPrint("Akce Zpět provedena, herní stav je třeba vrátit manuálně.");
-
-      // Po implementaci historie stavů zde zavoláte setState, aby se UI překreslilo.
-
+    final scoreManager = ref.read(scoreManagerProvider.notifier);
+    if (herniHistorie.isNotEmpty && scoreManager.canUseUndo()) {
+      if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
+        HapticFeedback.lightImpact();
+      }
+      scoreManager.useUndo();
+      obnovStavZHistorie();
     } else {
-      // Volitelně: Zobrazit zprávu, že nelze provést (např. v snackbaru)
-      debugPrint("Akci Zpět nelze provést - nedostatek bodů nebo tokenů.");
+      debugPrint("Nelze provést undo: nedostatek bodů/tokenů nebo žádná historie.");
+      // Zde by se mohla zobrazit zpráva pro hráče
     }
   }
 
@@ -1811,29 +2346,29 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
                         Text(
 
-                          "LEVEL ${aktualniLevelIndex + 1}",
+                                                    "LEVEL ${aktualniLevelIndex + 1}",
 
-                          style: const TextStyle(
+                                                    style: const TextStyle(
 
-                            fontSize: 16,
+                                                      fontSize: 16,
 
-                            color: Colors.white,
+                                                      color: Colors.white,
 
-                            fontWeight: FontWeight.w900,
+                                                      fontWeight: FontWeight.w900,
 
-                            letterSpacing: 2.0,
+                                                      letterSpacing: 2.0,
 
-                            decoration: TextDecoration.none,
+                                                      decoration: TextDecoration.none,
 
-                          ),
+                                                    ),
 
-                        ),
+                                                  ),
 
-                      ],
+                                                ],
 
-                    ),
+                                              ),
 
-                  ),
+                                            ),
 
   
 
@@ -1870,439 +2405,222 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
   
 
                   // SLOUPCE (Cíle a Herní pole)
-
                   Expanded(
-
                     child: Row(
-
                       mainAxisAlignment: MainAxisAlignment.center,
-
                       children: List.generate(
-
                         pocetSloupcu,
-
                         (idx) => Padding(
-
                           padding: const EdgeInsets.symmetric(horizontal: 5),
-
                           child: Builder(builder: (context) {
-
                             bool cilExistuje = idx < cile.length;
-
   
-
                             return Column(
-
                               children: [
-
                                                                 // Horní CÍLE
-
                                                                 SizedBox(
-
                                                                   height: vyskaKarty * 0.2,
-
                                                                   child: !cilExistuje || cile[idx].isEmpty
-
                                                                                                               ? null
-
                                                                                                                                                                                                                             : Container(
-
                                                                                                                                                                                                                                 width: sirkaKarty,
-
                                                                                                                                                                                                                                 margin:
-
                                                                                                                                                                                                                                     const EdgeInsets.only(bottom: 2),
-
                                                                                                                   decoration: BoxDecoration(
-
                                               color: const Color.fromARGB(
-
                                                   77, 0, 0, 0),
-
                                               borderRadius:
-
                                                   BorderRadius.circular(6),
-
                                               border: Border.all(
-
                                                   color: Colors.amber,
-
                                                   width: 1)),
-
                                                                                   alignment: Alignment.center,
-
                                                                                   child: Padding(
-
                                                                                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
-
                                                                                     child: FittedBox(
-
                                                                                       fit: BoxFit.scaleDown,
-
                                                                                       child: Text(
-
                                                                                         cile[idx].first.slovo,
-
                                                                                         style: const TextStyle(
-
                                                                                             color: Colors.amber,
-
                                                                                             fontWeight: FontWeight.bold),
-
                                                                                       ),
-
                                                                                     ),
-
                                                                                   ),
-
                                                                                 ),
-
                                                                         ),
-
                                                                 DragTarget<Map>(
-
                                                                   key: cilExistuje ? _cilKeys[idx] : null,
-
                                                                   onAcceptWithDetails: (details) =>
-
                                                                       presun(details.data, "cil", idx),
-
                                                                   builder: (c, _, __) => Stack(
-
                                                                       alignment: Alignment.center,
-
                                                                       children: [
-
                                                                         // The Frame
-
                                                                         Container(
-
                                                                           width: sirkaKarty,
-
                                                                           height: vyskaKarty,
-
                                                                                                                   decoration: BoxDecoration(
-
                                                                                                                     color: const Color.fromARGB(51, 0, 0, 0),
-
                                                                                                                                                               borderRadius: BorderRadius.circular(sirkaKarty * 0.16),
-
                                                                                                                                                                                                         border: cilExistuje && cile[idx].isEmpty
-
                                                                                                                                                                                                             ? Border.all(
-
                                                                                                                                                                                                                 color: Colors.amber.withOpacity(0.5),
-
                                                                                                                                                                                                                 width: 2,
-
                                                                                                                                                                                                                 strokeAlign: BorderSide.strokeAlignOutside,
-
                                                                                                                                                                                                               )
-
                                                                                                                                                                                                             : null,
-
                                                                                                                                                             ),
-
                                                                         ),
-
                                                                         // The Content
-
                                                                                                                   if (!cilExistuje || cile[idx].isEmpty)
-
                                                                                                                     Icon(
-
                                                                                                                       Icons.star,
-
                                                                                                                       color: const Color.fromARGB(77, 255, 193, 7),
-
                                                                                                                       size: sirkaKarty * 0.5,
-
                                                                                                                     )
-
                                                                                                                   else
-
                                                                                                                     Builder(builder: (context) {
-
                                                                                                                       final cardStack = Stack(
-
                                                                                                                         alignment: Alignment.center,
-
                                                                                                                         children: cile[idx]
-
                                                                                                                             .map((karta) =>
-
                                                                                                                                 vzhledKarty(
-
                                                                                                                                   karta,
-
                                                                                                                                   true,
-
                                                                                                                                   pocitadlo: (cile[idx]
-
                                                                                                                                               .indexOf(
-
                                                                                                                                                   karta) >
-
                                                                                                                                           0)
-
                                                                                                                                       ? "${cile[idx].indexOf(karta)}/${celkemVKategorii(karta.kategorieId) - 1}"
-
                                                                                                                                       : null,
-
                                                                                                                                   zobrazIkonu: cile[idx]
-
                                                                                                                                           .last ==
-
                                                                                                                                       karta,
-
                                                                                                                                   jeVCili: true,
-
                                                                                                                                 ))
-
                                                                                                                             .toList(),
-
                                                                                                                       );
-
                                                                         
-
                                                                                                                       if (idx == _pileBeingCleared) {
-
                                                                                                                         return TweenAnimationBuilder<
-
                                                                                                                             double>(
-
                                                                                                                           tween: Tween(
-
                                                                                                                               begin: 1.0, end: 0.0),
-
                                                                                                                           duration: const Duration(
-
                                                                                                                               milliseconds: 450),
-
                                                                                                                           builder:
-
                                                                                                                               (context, value, child) {
-
                                                                                                                             return Opacity(
-
                                                                                                                               opacity: value,
-
                                                                                                                               child: Transform.scale(
-
                                                                                                                                 scale: value,
-
                                                                                                                                 child: child,
-
                                                                                                                               ),
-
                                                                                                                             );
-
                                                                                                                           },
-
                                                                                                                           child: cardStack,
-
                                                                                                                         );
-
                                                                                                                       } else {
-
                                                                                                                         return cardStack;
-
                                                                                                                       }
-
                                                                                                                     }),
-
                                                                       ],
-
                                                                     ),
-
-                                ),
-
-                                const SizedBox(height: 5),
-
+                                                                ),
+                                                                const SizedBox(height: 5),
   
-
                                 // Spodní SLOUPCE (Opravené centrování karet)
-
                                                                 Expanded(
-
                                                                   child: DragTarget<Map>(
-
                                                                     key: _sloupecDropTargetKeys[idx],
-
                                                                     onAcceptWithDetails: (details) => presun(
-
                                                                         details.data, "sloupec", idx),
-
                                                                       builder: (c, _, __) => Container(
-
                                       width:
-
                                           sirkaKarty, // Sjednoceno na šířku karty
-
                                       color: Colors
-
                                           .transparent, // Zajišťuje, že oblast reaguje na dotyk
-
                                       child: Stack(
-
                                         clipBehavior: Clip.none,
-
                                         alignment: Alignment
-
                                             .topCenter, // <--- TATO ŘÁDKA CENTRUJE KARTY VE SLOUPCI
-
                                         children: [
-
                                           // 1. VIZUÁLNÍ RÁMEČEK (Hnízdo)
-
                                           Positioned(
-
                                             top: 0,
-
                                             child: Container(
-
                                               width:
-
                                                   sirkaKarty, // Musí být stejné jako karta
-
                                               height:
-
                                                   vyskaKarty * 2.1, // 180/85
-
                                               decoration: BoxDecoration(
-
                                                 borderRadius:
-
                                                     BorderRadius.circular(
-
                                                         sirkaKarty * 0.16),
-
                                                 color: const Color.fromARGB(
-
                                                     26, 0, 0, 0),
-
                                                 border: Border.all(
-
                                                     color: Colors.white
-
                                                         .withAlpha(13),
-
                                                     width: 1.5),
-
                                               ),
-
                                             ),
-
                                           ),
-
   
-
                                           // 2. Rubové (skryté) karty
-
                                           for (int k = 0;
-
                                               k < skryteBalicky[idx].length;
-
                                               k++)
-
                                             Positioned(
-
                                               top: k * posunSkrytych,
-
                                               child: vzhledKarty(
-
                                                   KartaData("", false, 0),
-
                                                   false),
-
                                             ),
-
   
-
                                           // 3. Viditelné karty
-
                                           for (int j = 0;
-
                                               j < sloupce[idx].length;
-
                                               j++)
-
                                             if (!(_tahanaPozice != null &&
-
                                                 _tahanaPozice!['col'] == idx &&
-
                                                 j >= _tahanaPozice!['idx']!))
-
                                                                                             Positioned(
-
                                                                                               top: (skryteBalicky[idx].length *
-
                                                                                                       posunSkrytych) +
-
                                                                                                   (j * posunOdkrytych),
-
                                                                                               child: Builder(builder: (context) {
-
                                                                                                 final bool jeTentoSloupecTahan =
-
                                                                                                     _tahanaPozice != null &&
-
                                                                                                         _tahanaPozice!['col'] == idx;
-
                                                                                                 final int posledniKartaVPoli =
-
                                                                                                     jeTentoSloupecTahan
-
                                                                                                         ? _tahanaPozice!['idx']! - 1
-
                                                                                                         : sloupce[idx].length - 1;
-
                                                                                                 final bool jeKartaZakryta =
-
                                                                                                     j < posledniKartaVPoli;
-
                                               
-
                                                                                                 return tahatelna(
-
                                                                                                   sloupce[idx].sublist(j),
-
                                                                                                   "sloupec",
-
                                                                                                   idx,
-
                                                                                                   indexVPuvodnimSloupci: j,
-
                                                                                                   jeZakryta: jeKartaZakryta,
-
                                                                                                 );
-
                                                                                               }),
-
                                                                                             )
-
                                         ],
-
                                       ),
-
                                     ),
-
                                   ),
-
                                 ),
-
                               ],
-
                             );
-
                           }),
-
                         ),
-
                       ),
-
                     ),
-
                   ),
 
                 ],
@@ -2411,43 +2729,15 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
                 
 
-                                          Container(margin: const EdgeInsets.symmetric(vertical: 4), width: 15, height: 1, color: Colors.white12),
+                                                                                    Container(margin: const EdgeInsets.symmetric(vertical: 4), width: 15, height: 1, color: Colors.white12),
 
                 
 
-                                          // TLAČÍTKO ZPĚT (UNDO)
-
-                                          IconButton(
-
-                                            icon: const Icon(Icons.undo, color: Colors.white, size: 18),
-
-                                            onPressed: _provedUndo,
-
-                                            padding: EdgeInsets.zero,
-
-                                            constraints: const BoxConstraints(),
-
-                                            tooltip: "Zpět",
-
-                                          ),
-
-                                          Text(
-
-                                            !scoreState.firstUndoUsed ? "(-50b)" : "x${scoreState.undoTokens}",
-
-                                            style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 9, fontWeight: FontWeight.bold),
-
-                                          ),
+                                                          
 
                 
 
-                
-
-                                          Container(margin: const EdgeInsets.symmetric(vertical: 8), width: 20, height: 1, color: Colors.white12),
-
-                
-
-                                          // TAHY
+                                                                                    // TAHY
 
                                           Column(
 
@@ -3017,87 +3307,235 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
   
 
-            if (kaskada.isNotEmpty)
+                        if (kaskada.isNotEmpty && _finalScore != null && _finalCoins != null)
 
-              Positioned(
+  
 
-                bottom: 50,
+                          KonecLeveluObrazovka(
 
-                left: 0,
+  
 
-                right: 0,
+                            score: _finalScore!,
 
-                child: Center(
+  
 
-                  child: Column(
+                            coins: _finalCoins!,
 
-                    mainAxisSize: MainAxisSize.min,
+  
 
-                    children: [
+                            onNextLevel: () => restartHry(novyLevel: true),
 
-                                            Text(
+  
 
-                                              "VÍTĚZSTVÍ! SKÓRE: ${ref.watch(scoreManagerProvider).score}",
+                            onMenu: () {
 
-                                              style: const TextStyle(
+  
 
-                          fontSize: 24,
+                              // Pop twice: once for the end screen, once for the game screen
 
-                          fontWeight: FontWeight.w900,
+  
 
-                          color: Colors.amber,
+                              Navigator.of(context).pop();
 
-                          decoration: TextDecoration.none,
+  
 
-                          shadows: [Shadow(blurRadius: 10, color: Colors.black)],
+                              Navigator.of(context).pop();
 
-                        ),
+  
 
-                      ),
+                            },
 
-                      const SizedBox(height: 20),
+  
 
-                      ElevatedButton(
+                          ),
 
-                        onPressed: () => restartHry(novyLevel: true),
+                                                                                                                                            // --- TLAČÍTKO ZPĚT (verze v Stacku) ---
 
-                        style: ElevatedButton.styleFrom(
+                                                                                                                                            if (kaskada.isEmpty && !jeKonecHryProhra)
 
-                            backgroundColor: Colors.amber,
+                                                                                                                                              SafeArea(
 
-                            foregroundColor: Colors.black),
+                                                                                                                                                child: Align(
 
-                        child: Text(
+                                                                                                                                                  alignment: Alignment.bottomLeft,
 
-                          aktualniLevelIndex < seznamLevelu.length - 1
+                                                                                                                                                  child: Padding(
 
-                              ? "DALŠÍ LEVEL >>"
+                                                                                                                                                    padding: const EdgeInsets.only(bottom: 20.0, left: 20.0),
 
-                              : "HOTOVO! ZNOVU OD 1.",
+                                                                                                                                                    child: Consumer(
 
-                          style: const TextStyle(
+                                                                                                                                                                                                                                  builder: (context, ref, child) {
 
-                              fontSize: 20, fontWeight: FontWeight.bold),
+                                                                                                                                                                                                                                    final scoreState = ref.watch(scoreManagerProvider);
 
-                        ),
+                                                                                                                                                                                                                                    final scoreManagerNotifier = ref.read(scoreManagerProvider.notifier);
 
-                      )
+                                                                                                                                                                                                                                    final isUndoAvailable = herniHistorie.isNotEmpty && scoreManagerNotifier.canUseUndo();
 
-                    ],
+                                                                                                                                                                                            
 
-                  ),
+                                                                                                                                                                                                                                    String? undoCount;
 
-                ),
+                                                                                                                                                                                                                                    if (!scoreState.firstUndoUsed) {
 
-              )
+                                                                                                                                                                                                                                      if (scoreState.score >= 50) undoCount = "1";
 
-          ],
+                                                                                                                                                                                                                                    } else {
 
-        ),
+                                                                                                                                                                                                                                      if (scoreState.undoTokens > 0) undoCount = '${scoreState.undoTokens}';
 
-      );
+                                                                                                                                                                                                                                    }
 
-    }
+                                                                                                                                                                                            
+
+                                                                                                                                                                                                                                    final double buttonWidth = sirkaKarty * 0.4;
+
+                                                                                                                                                                                                                                    final double buttonHeight = vyskaKarty * 0.4;
+
+                                                                                                                                                                                            
+
+                                                                                                                                                                                                                                    return GestureDetector(
+
+                                                                                                                                                                                                                                      onTap: isUndoAvailable ? _provedUndo : null,
+
+                                                                                                                                                                                                                                      child: AnimatedOpacity(
+
+                                                                                                                                                                                                                                        duration: const Duration(milliseconds: 200),
+
+                                                                                                                                                                                                                                        opacity: isUndoAvailable ? 1.0 : 0.4,
+
+                                                                                                                                                                                                                                        child: Stack(
+
+                                                                                                                                                                                                                                          clipBehavior: Clip.none,
+
+                                                                                                                                                                                                                                          children: [
+
+                                                                                                                                                                                                                                            Container(
+
+                                                                                                                                                                                                                                              width: buttonWidth,
+
+                                                                                                                                                                                                                                              height: buttonHeight,
+
+                                                                                                                                                                                                                                              decoration: BoxDecoration(
+
+                                                                                                                                                                                                                                                borderRadius: BorderRadius.circular(buttonWidth * 0.13),
+
+                                                                                                                                                                                                                                                border: Border.all(color: Colors.black.withOpacity(0.4), width: 1),
+
+                                                                                                                                                                                                                                                              image: const DecorationImage(
+
+                                                                                                                                                                                                                                                                image: AssetImage('assets/images/stary_papir.png'),
+
+                                                                                                                                                                                                                                                                fit: BoxFit.cover,
+
+                                                                                                                                                                                                                                                  colorFilter: ColorFilter.mode(
+
+                                                                                                                                                                                                                                                    const Color.fromARGB(255, 255, 250, 240),
+
+                                                                                                                                                                                                                                                    BlendMode.softLight,
+
+                                                                                                                                                                                                                                                  ),
+
+                                                                                                                                                                                                                                                ),
+
+                                                                                                                                                                                                                                                boxShadow: const [
+
+                                                                                                                                                                                                                                                  BoxShadow(
+
+                                                                                                                                                                                                                                                      color: Color.fromARGB(51, 0, 0, 0),
+
+                                                                                                                                                                                                                                                      blurRadius: 4,
+
+                                                                                                                                                                                                                                                      offset: Offset(1, 2))
+
+                                                                                                                                                                                                                                                ],
+
+                                                                                                                                                                                                                                              ),
+
+                                                                                                                                                                                                                                              child: const Center(
+
+                                                                                                                                                                                                                                                child: Icon(
+
+                                                                                                                                                                                                                                                  Icons.undo,
+
+                                                                                                                                                                                                                                                  color: Color(0xFF3E2723),
+
+                                                                                                                                                                                                                                                  size: 16,
+
+                                                                                                                                                                                                                                                ),
+
+                                                                                                                                                                                                                                              ),
+
+                                                                                                                                                                                                                                            ),
+
+                                                                                                                                                                                                                                            if (undoCount != null)
+
+                                                                                                                                                                                                                                              Positioned(
+
+                                                                                                                                                                                                                                                top: -2,
+
+                                                                                                                                                                                                                                                right: -2,
+
+                                                                                                                                                                                                                                                child: Container(
+
+                                                                                                                                                                                                                                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+
+                                                                                                                                                                                                                                                  decoration: BoxDecoration(
+
+                                                                                                                                                                                                                                                    color: Colors.amber,
+
+                                                                                                                                                                                                                                                    borderRadius: BorderRadius.circular(8),
+
+                                                                                                                                                                                                                                                    border: Border.all(color: Colors.white, width: 1),
+
+                                                                                                                                                                                                                                                  ),
+
+                                                                                                                                                                                                                                                  child: Text(
+
+                                                                                                                                                                                                                                                    undoCount,
+
+                                                                                                                                                                                                                                                    style: const TextStyle(
+
+                                                                                                                                                                                                                                                      color: Colors.black,
+
+                                                                                                                                                                                                                                                      fontWeight: FontWeight.bold,
+
+                                                                                                                                                                                                                                                      fontSize: 9,
+
+                                                                                                                                                                                                                                                    ),
+
+                                                                                                                                                                                                                                                  ),
+
+                                                                                                                                                                                                                                                ),
+
+                                                                                                                                                                                                                                              ),
+
+                                                                                                                                                                                                                                          ],
+
+                                                                                                                                                                                                                                        ),
+
+                                                                                                                                                                                                                                      ),
+
+                                                                                                                                                                                                                                    );
+
+                                                                                                                                                                                                                                  },
+
+                                                                                                                                                    ),
+
+                                                                                                                                                  ),
+
+                                                                                                                                                ),
+
+                                                                                                                                              )
+
+                            ],
+
+                          ),
+
+                        );
+
+                      }
 
   // ==========================================================================
   // --- POMOCNÉ WIDGETY (Draggable, Vzhled karty) ---
@@ -3262,10 +3700,9 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
           ? BoxDecoration(
               borderRadius: BorderRadius.circular(sirkaKarty * 0.13),
               border: Border.all(color: Colors.black.withOpacity(0.4), width: 1),
-              image: const DecorationImage(
-                image: AssetImage('assets/images/stary_papir.png.png'),
-                fit: BoxFit.cover,
-colorFilter: ColorFilter.mode(
+                                                                                                                                                                                                                                                              image: const DecorationImage(
+                                                                                                                                                                                                                                                                image: AssetImage('assets/images/stary_papir.png'),
+                                                                                                                                                                                                                                                                fit: BoxFit.cover,colorFilter: ColorFilter.mode(
                   const Color.fromARGB(255, 255, 250, 240),
                   BlendMode.softLight,
                 ),
