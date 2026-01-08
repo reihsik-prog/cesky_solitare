@@ -7,10 +7,10 @@ import 'data_modely.dart';
 final List<Level> seznamLevelu = [
   // --- LEVEL 1 (ID 1-4) ---
   Level(karty: [
-    KartaData("ZVÍŘE", true, 1), KartaData("Kočka", false, 1), KartaData("Pes", false, 1), KartaData("Prase", false, 1),KartaData("Liška", false, 1),
-    KartaData("OVOCE", true, 2), KartaData("Hruška", false, 2), KartaData("Jablko", false, 2), KartaData("Banán", false, 2), KartaData("Třešeň", false, 2),
-    KartaData("MĚSTO", true, 3), KartaData("Praha", false, 3), KartaData("Brno", false, 3), KartaData("Ostrava", false, 3), KartaData("Plzeň", false, 3),
-    KartaData("BARVA", true, 4), KartaData("Modrá", false, 4), KartaData("Zelená", false, 4), KartaData("Červená", false, 4), KartaData("Žlutá", false, 4),
+    KartaData("ZVÍŘE", true, 1), KartaData("Kočka", false, 1), 
+    KartaData("OVOCE", true, 2), KartaData("Hruška", false, 2), 
+    KartaData("MĚSTO", true, 3), KartaData("Praha", false, 3), 
+    KartaData("BARVA", true, 4), KartaData("Modrá", false, 4), 
   ]),
   // --- LEVEL 2 (ID 5-8) ---
   Level(karty: [

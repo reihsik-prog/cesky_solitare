@@ -960,23 +960,75 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
     
 
-                      final pocetSloupcuProPlan = level.pocetSloupcu;
+                                            final pocetSloupcuProPlan = level.pocetSloupcu;
 
     
 
-                  
+                                            
 
     
 
-                      List<int> ciloveSkryte =
+                                            final int pocetKaretCelkem = level.karty.length;
 
     
 
-                          List.generate(pocetSloupcuProPlan, (_) => _rnd.nextInt(3));
+                                            List<int> ciloveSkryte;
 
     
 
-                      ciloveSkryte.shuffle();
+                                            int karetVeSloupcich;
+
+    
+
+                                            int pokus = 0;
+
+    
+
+                                            do {
+
+    
+
+                                              // S každým neúspěchem snižujeme maximální počet skrytých karet, abychom našli řešení
+
+    
+
+                                              int maxSkrytychNaSloupec = pokus < 10 ? 3 : (pokus < 20 ? 2 : 1);
+
+    
+
+                                              ciloveSkryte = List.generate(pocetSloupcuProPlan, (_) => _rnd.nextInt(maxSkrytychNaSloupec));
+
+    
+
+                                              karetVeSloupcich = ciloveSkryte.fold(0, (p, e) => p + e) + pocetSloupcuProPlan;
+
+    
+
+                                              pokus++;
+
+    
+
+                                            } while (karetVeSloupcich > pocetKaretCelkem && pokus < 30); // Omezíme počet pokusů
+
+    
+
+                      
+
+    
+
+                                            // Pokud se ani po 30 pokusech nepodařilo najít vhodné rozdání, použijeme nejjednodušší variantu
+
+    
+
+                                            if (karetVeSloupcich > pocetKaretCelkem) {
+
+    
+
+                                              ciloveSkryte = List.generate(pocetSloupcuProPlan, (_) => 0);
+
+    
+
+                                            }
 
     
 
