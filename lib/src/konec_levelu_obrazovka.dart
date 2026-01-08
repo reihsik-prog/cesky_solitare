@@ -101,7 +101,7 @@ class _KonecLeveluObrazovkaState extends State<KonecLeveluObrazovka>
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = GoogleFonts.merriweather(
+    final textStyle = GoogleFonts.oswald(
       fontSize: 24,
       color: const Color(0xFF4A3933),
     );
@@ -134,7 +134,7 @@ class _KonecLeveluObrazovkaState extends State<KonecLeveluObrazovka>
               children: [
                 Text(
                   'Level Dokončen!',
-                  style: GoogleFonts.merriweather(
+                  style: GoogleFonts.oswald(
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF4A3933),
@@ -166,41 +166,20 @@ class _KonecLeveluObrazovkaState extends State<KonecLeveluObrazovka>
                             'assets/animations/coin.json',
                             controller: _coinAnimController,
                           ),
-                          AnimatedBuilder(
-                            animation: _coinAnimController,
-                            builder: (context, child) {
-                              final coinValue = _coinAnimController.value;
-                              final isFront =
-                                  coinValue < 0.25 || coinValue > 0.75;
-                              return Transform(
-                                alignment: Alignment.center,
-                                transform: Matrix4.identity()
-                                  ..setEntry(3, 2, 0.001)
-                                  ..rotateY(2 * pi * coinValue),
-                                child: isFront
-                                    ? Text(
-                                  '$_displayedCoins',
-                                  style: GoogleFonts.merriweather(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFF4A3933),
-                                  ),
-                                )
-                                    : Transform(
-                                  alignment: Alignment.center,
-                                  transform: Matrix4.identity()
-                                    ..rotateY(pi),
-                                  child: Text(
-                                    '$_displayedCoins',
-                                    style: GoogleFonts.merriweather(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF4A3933),
-                                    ),
-                                  ),
+                          Text(
+                            '$_displayedCoins',
+                            style: GoogleFonts.oswald(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF4A3933),
+                              shadows: [
+                                const Shadow(
+                                  blurRadius: 2.0,
+                                  color: Colors.white,
+                                  offset: Offset(0,0),
                                 ),
-                              );
-                            },
+                              ]
+                            ),
                           ),
                         ],
                       ),
