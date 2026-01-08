@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 
 import 'pomocne_widgety.dart';
@@ -24,25 +25,39 @@ class KonecLeveluObrazovka extends StatefulWidget {
 
 class _KonecLeveluObrazovkaState extends State<KonecLeveluObrazovka>
     with TickerProviderStateMixin {
-  late AnimationController _controller;
-  List<_CoinParticle> _particles = [];
+  late AnimationController _scoreController;
+  late AnimationController _coinAnimController;
+  late AnimationController _dialogAnimController;
+  late Animation<double> _scaleAnimation;
+
   int _displayedScore = 0;
   int _displayedCoins = 0;
   bool _animationFinished = false;
 
-  final GlobalKey _piggyBankKey = GlobalKey();
-
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _scoreController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 1),
     );
 
-    _controller.addListener(() {
-      setState(() {});
-    });
+    _coinAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+
+    _dialogAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _scaleAnimation = CurvedAnimation(
+      parent: _dialogAnimController,
+      curve: Curves.elasticOut,
+    );
+
+    _dialogAnimController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -52,132 +67,150 @@ class _KonecLeveluObrazovkaState extends State<KonecLeveluObrazovka>
   }
 
   void _startAnimations() {
-    // Score counting animation
     final scoreTween = IntTween(begin: 0, end: widget.score);
     final scoreAnimation = scoreTween.animate(
       CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+        parent: _scoreController,
+        curve: const Interval(0.0, 1.0, curve: Curves.easeOut),
       ),
     );
     scoreAnimation.addListener(() {
-      setState(() {
-        _displayedScore = scoreAnimation.value;
-      });
-    });
-
-    // Animate particles
-    final particleAnimation =
-        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
-    ));
-    particleAnimation.addListener(() {
-      for (var particle in _particles) {
-        particle.update(particleAnimation.value);
+      if(mounted) {
+        setState(() {
+          _displayedScore = scoreAnimation.value;
+        });
       }
     });
 
-    // Start animation right away
-    _controller.forward().whenComplete(() {
+    _scoreController.forward().whenComplete(() {
       if (!mounted) return;
       setState(() {
         _animationFinished = true;
         _displayedCoins = widget.coins;
       });
     });
-
-    // Schedule particle creation after a delay.
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      // create particles and trigger a rebuild to paint them
-      setState(() {
-        _createParticles();
-      });
-    });
-  }
-
-  void _createParticles() {
-    final RenderBox? piggyBox =
-        _piggyBankKey.currentContext?.findRenderObject() as RenderBox?;
-    if (piggyBox == null) return;
-
-    final piggyPosition = piggyBox.localToGlobal(Offset.zero) +
-        Offset(piggyBox.size.width / 2, piggyBox.size.height / 2);
-
-    final random = Random();
-    _particles = List.generate(widget.coins > 20 ? 20 : widget.coins, (index) {
-      final startPosition = Offset(
-        MediaQuery.of(context).size.width / 2 + (random.nextDouble() - 0.5) * 100,
-        MediaQuery.of(context).size.height * 0.4,
-      );
-      return _CoinParticle(
-        startPosition: startPosition,
-        endPosition: piggyPosition,
-      );
-    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _scoreController.dispose();
+    _coinAnimController.dispose();
+    _dialogAnimController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final textStyle = GoogleFonts.merriweather(
+      fontSize: 24,
+      color: const Color(0xFF4A3933),
+    );
+
     return Scaffold(
       backgroundColor: Colors.black.withOpacity(0.7),
-      body: Stack(
-        children: [
-          Center(
-            child: Container(
-              padding: const EdgeInsets.all(24.0),
-              margin: const EdgeInsets.all(24.0),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5E8C7),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFC8B6A6), width: 5),
+      body: Center(
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+            margin: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFC8B6A6), width: 5),
+              image: const DecorationImage(
+                image: AssetImage('assets/images/stary_papir.png'),
+                fit: BoxFit.cover,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Level Dokončen!',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4A3933),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Level Dokončen!',
+                  style: GoogleFonts.merriweather(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF4A3933),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: 140,
+                  height: 140,
+                  child: Lottie.asset(
+                    'assets/animations/piggy_bank.json',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('Skóre: $_displayedScore', style: textStyle),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('Mince: ', style: textStyle),
+                    SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Lottie.asset(
+                            'assets/animations/coin.json',
+                            controller: _coinAnimController,
+                          ),
+                          AnimatedBuilder(
+                            animation: _coinAnimController,
+                            builder: (context, child) {
+                              final coinValue = _coinAnimController.value;
+                              final isFront =
+                                  coinValue < 0.25 || coinValue > 0.75;
+                              return Transform(
+                                alignment: Alignment.center,
+                                transform: Matrix4.identity()
+                                  ..setEntry(3, 2, 0.001)
+                                  ..rotateY(2 * pi * coinValue),
+                                child: isFront
+                                    ? Text(
+                                  '$_displayedCoins',
+                                  style: GoogleFonts.merriweather(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF4A3933),
+                                  ),
+                                )
+                                    : Transform(
+                                  alignment: Alignment.center,
+                                  transform: Matrix4.identity()
+                                    ..rotateY(pi),
+                                  child: Text(
+                                    '$_displayedCoins',
+                                    style: GoogleFonts.merriweather(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF4A3933),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Skóre: $_displayedScore',
-                    style: const TextStyle(fontSize: 24, color: Color(0xFF4A3933)),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Získané mince: $_displayedCoins',
-                        style: const TextStyle(
-                            fontSize: 24, color: Color(0xFF4A3933)),
-                      ),
-                      const SizedBox(width: 10),
-                      SizedBox(
-                        key: _piggyBankKey,
-                        width: 180,
-                        height: 180,
-                        child: Lottie.asset(
-                          'assets/animations/piggy_bank.json',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  if (_animationFinished)
-                    Column(
+                  ],
+                ),
+                const SizedBox(height: 32),
+                if (_animationFinished)
+                  FadeIn(
+                    child: Column(
                       children: [
                         MenuTlacitko(
                           text: 'DALŠÍ LEVEL',
@@ -192,54 +225,12 @@ class _KonecLeveluObrazovkaState extends State<KonecLeveluObrazovka>
                         ),
                       ],
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
-          if (!_animationFinished)
-            SizedBox.expand(
-              child: CustomPaint(
-                painter: _CoinPainter(particles: _particles),
-              ),
-            ),
-        ],
+        ),
       ),
     );
-  }
-}
-
-class _CoinPainter extends CustomPainter {
-  final List<_CoinParticle> particles;
-
-  _CoinPainter({required this.particles});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.amber;
-    for (var particle in particles) {
-      if (particle.progress > 0 && particle.progress < 1) {
-        canvas.drawCircle(particle.currentPosition, 8, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class _CoinParticle {
-  Offset startPosition;
-  Offset endPosition;
-  double progress = 0;
-  Offset currentPosition;
-
-  _CoinParticle({required this.startPosition, required this.endPosition})
-      : currentPosition = startPosition;
-
-  void update(double animationValue) {
-    progress = animationValue;
-    // Simple linear interpolation
-    // For a more dynamic path, you could use a curved path
-    currentPosition = Offset.lerp(startPosition, endPosition, progress)!;
   }
 }
