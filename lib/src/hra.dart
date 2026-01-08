@@ -1204,7 +1204,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-          final bonus = zbyvajiciTahy > 0 ? zbyvajiciTahy * 50 : 0;
+          final bonus = zbyvajiciTahy > 0 ? zbyvajiciTahy * 5 : 0;
 
 
 
@@ -1220,7 +1220,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-            _finalCoins = _finalScore! ~/ 100;
+            _finalCoins = _finalScore! ~/ 30;
 
 
 
@@ -1473,7 +1473,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-            if (!muze) {
+                        if (!muze) {
 
 
 
@@ -1481,7 +1481,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-              if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
+            
 
 
 
@@ -1489,7 +1489,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-                HapticFeedback.heavyImpact();
+              
 
 
 
@@ -1497,7 +1497,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-              }
+            
 
 
 
@@ -1505,7 +1505,215 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
 
-              return;
+                          if (ref.read(settingsProvider).value?.vibraceZapnute ?? false) {
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+              
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+                            HapticFeedback.heavyImpact();
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+              
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+                          }
+
+
+
+  
+
+
+
+                          
+
+
+
+  
+
+
+
+                          ref.read(scoreManagerProvider.notifier).trestZaChybnyTah();
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+              
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+            
+
+
+
+  
+
+
+
+                          return;
 
 
 
@@ -1572,45 +1780,12 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
 
               // Bodování podle nových pravidel
-
-
-
-  
-
-
-
-              if (kam == "sloupec") {
-
-
-
-  
-
-
-
-                scoreNotifier.cardToTableau();
-
-
-
-  
-
-
-
-              } else if (kam == "cil") {
-
-
-
-  
-
-
-
-                scoreNotifier.cardToFoundation(cardCount: tahaneKarty.length);
-
-
-
-  
-
-
-
+              if (!tahaneKarty.first.jeHlavni) {
+                if (kam == "sloupec") {
+                  scoreNotifier.cardToTableau(cardCount: tahaneKarty.length);
+                } else if (kam == "cil") {
+                  scoreNotifier.cardToFoundation(cardCount: tahaneKarty.length);
+                }
               }
 
 

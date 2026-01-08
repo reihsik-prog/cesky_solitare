@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'src/app_providers.dart';
+import 'src/score_manager.dart';
 import 'src/vykreslovani.dart';
 import 'src/hra.dart';
 import 'src/pomocne_widgety.dart';
@@ -26,6 +27,62 @@ void main() async {
 // Převedeno na ConsumerWidget pro integraci s Riverpodem.
 class HlavniMenu extends ConsumerWidget {
   const HlavniMenu({super.key});
+
+  void _showNewGameConfirmationDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFFFF8E1),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: const Text(
+            "Nová hra",
+            style: TextStyle(
+                color: Color(0xFF3E2723), fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+              "Opravdu chceš začít od nuly? Přijdeš o všechny našetřené mince!"),
+          actions: [
+            TextButton(
+              child: const Text(
+                "ZRUŠIT",
+                style: TextStyle(
+                    color: Color(0xFF3E2723), fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: const Text(
+                "POTVRDIT",
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                // Provedeme tvrdý reset
+                ref.read(scoreManagerProvider.notifier).hardReset();
+                // Invalidujeme provider, aby se menu aktualizovalo (skryje "Pokračovat")
+                ref.invalidate(existujeUlozeniProvider);
+
+                Navigator.of(dialogContext).pop(); // Zavřeme dialog
+
+                // Spustíme novou hru
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const SlovniSolitare(nacistUlozenou: false),
+                  ),
+                ).then((_) => ref.invalidate(existujeUlozeniProvider));
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -129,14 +186,21 @@ class HlavniMenu extends ConsumerWidget {
                   text: "NOVÁ HRA",
                   ikona: Icons.play_arrow_rounded,
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const SlovniSolitare(nacistUlozenou: false),
-                      ),
-                       // Po návratu z hry znovu zkontrolujeme stav
-                    ).then((_) => ref.invalidate(existujeUlozeniProvider));
+                    final existujeUlozeni =
+                        existujeUlozeniAsync.value ?? false;
+                    if (existujeUlozeni) {
+                      // Pokud existuje uložená hra, zobrazíme dialog pro potvrzení
+                      _showNewGameConfirmationDialog(context, ref);
+                    } else {
+                      // Pokud ne, rovnou spustíme novou hru
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const SlovniSolitare(nacistUlozenou: false),
+                        ),
+                      ).then((_) => ref.invalidate(existujeUlozeniProvider));
+                    }
                   },
                 ),
                 const SizedBox(height: 20),

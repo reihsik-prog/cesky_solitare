@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'dart:math';
 
 // Krok 1: Definice stavového objektu
 // Uchovává všechny hodnoty, které chceme sledovat a vykreslovat v UI.
@@ -60,12 +61,22 @@ class ScoreManager extends Notifier<ScoreState> {
 
   // --- Metody pro bodování akcí ---
 
-  void cardToTableau() {
-    state = state.copyWith(score: state.score + 5);
+  void cardToTableau({int cardCount = 1}) {
+    state = state.copyWith(score: state.score + cardCount);
   }
 
   void cardToFoundation({int cardCount = 1}) {
-    state = state.copyWith(score: state.score + (15 * cardCount));
+    int body = 0;
+    if (cardCount == 1) {
+      body = 1;
+    } else if (cardCount > 1) {
+      body = cardCount * 2;
+    }
+    state = state.copyWith(score: state.score + body);
+  }
+
+  void trestZaChybnyTah() {
+    state = state.copyWith(score: max(0, state.score - 5));
   }
 
   // --- Logika pro tlačítko Zpět (Undo) ---
@@ -98,18 +109,21 @@ class ScoreManager extends Notifier<ScoreState> {
   // --- Konec hry a bonusy ---
 
   void calculateWinBonus(int remainingMoves) {
-    final bonus = remainingMoves * 50;
+    final bonus = remainingMoves * 5;
     state = state.copyWith(score: state.score + bonus);
   }
 
   void endGame() {
-    // Převod bodů na mince
-    final newCoins = state.score ~/ 100;
-    state = state.copyWith(coins: state.coins + newCoins);
+    // Převod bodů na mince a rovnou i reset pro další hru
+    final newCoins = state.score ~/ 30;
+    state = state.copyWith(
+      coins: state.coins + newCoins,
+      score: 0,
+      firstUndoUsed: false,
+    );
     
-    // Uložení a reset bodů pro další hru
+    // Uložení trvalých hodnot
     _saveData();
-    resetForNewGame();
   }
 
   // --- Resetování pro novou hru ---
@@ -119,6 +133,17 @@ class ScoreManager extends Notifier<ScoreState> {
       score: 0,
       firstUndoUsed: false,
     );
+  }
+
+  void hardReset() async {
+    state = state.copyWith(
+      coins: 0,
+      score: 0,
+      undoTokens: 3, // Výchozí hodnota pro prvního hráče
+      firstUndoUsed: false,
+    );
+    await _prefs.setBool('existujeUlozeni', false);
+    await _saveData();
   }
 }
 
