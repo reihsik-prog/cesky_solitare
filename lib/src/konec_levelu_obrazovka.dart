@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import 'pomocne_widgety.dart';
+
 class KonecLeveluObrazovka extends StatefulWidget {
   final int score;
   final int coins;
@@ -175,16 +177,18 @@ class _KonecLeveluObrazovkaState extends State<KonecLeveluObrazovka>
                   ),
                   const SizedBox(height: 32),
                   if (_animationFinished)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    Column(
                       children: [
-                        ElevatedButton(
-                          onPressed: widget.onMenu,
-                          child: const Text('Hlavní Menu'),
+                        MenuTlacitko(
+                          text: 'DALŠÍ LEVEL',
+                          ikona: Icons.play_arrow_rounded,
+                          onTap: widget.onNextLevel,
                         ),
-                        ElevatedButton(
-                          onPressed: widget.onNextLevel,
-                          child: const Text('Další Level'),
+                        const SizedBox(height: 20),
+                        MenuTlacitko(
+                          text: 'HLAVNÍ MENU',
+                          ikona: Icons.menu,
+                          onTap: widget.onMenu,
                         ),
                       ],
                     ),
