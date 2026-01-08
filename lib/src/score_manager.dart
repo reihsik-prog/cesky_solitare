@@ -66,12 +66,7 @@ class ScoreManager extends Notifier<ScoreState> {
   }
 
   void cardToFoundation({int cardCount = 1}) {
-    int body = 0;
-    if (cardCount == 1) {
-      body = 1;
-    } else if (cardCount > 1) {
-      body = cardCount * 2;
-    }
+    final body = cardCount * 2;
     state = state.copyWith(score: state.score + body);
   }
 
