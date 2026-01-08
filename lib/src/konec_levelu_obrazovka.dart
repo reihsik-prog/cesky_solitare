@@ -151,34 +151,52 @@ class _KonecLeveluObrazovkaState extends State<KonecLeveluObrazovka>
                 const SizedBox(height: 16),
                 Text('Skóre: $_displayedScore', style: textStyle),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                Column(
                   children: [
-                    Text('Mince: ', style: textStyle),
-                    SizedBox(
-                      width: 60,
-                      height: 60,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Lottie.asset(
-                            'assets/animations/coin.json',
-                            controller: _coinAnimController,
+                    Text(
+                      'Získané mince:',
+                      style: GoogleFonts.oswald(
+                        fontSize: 18,
+                        color: const Color(0xFF4A3933).withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFBC02D), Color(0xFFFFD700)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 4),
                           ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Lottie.asset(
+                              'assets/animations/coin.json',
+                              controller: _coinAnimController,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           Text(
                             '$_displayedCoins',
                             style: GoogleFonts.oswald(
-                              fontSize: 20,
+                              fontSize: 28,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF4A3933),
-                              shadows: [
-                                const Shadow(
-                                  blurRadius: 2.0,
-                                  color: Colors.white,
-                                  offset: Offset(0,0),
-                                ),
-                              ]
                             ),
                           ),
                         ],
