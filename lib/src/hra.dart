@@ -3553,6 +3553,13 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
   
 
                             onMenu: () {
+                              // Save the current level index before returning to menu
+                              if (aktualniLevelIndex < seznamLevelu.length - 1) {
+                                aktualniLevelIndex++;
+                              } else {
+                                aktualniLevelIndex = 0; // Wrap to first level if at last
+                              }
+                              ulozHru();
                               // Ensure we return to the first route (hlavní menu)
                               Navigator.of(context).popUntil((route) => route.isFirst);
                             },
