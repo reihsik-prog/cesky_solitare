@@ -988,7 +988,6 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
 
     
 
-                                              // S každým neúspěchem snižujeme maximální počet skrytých karet, abychom našli řešení
 
     
 
@@ -2184,8 +2183,7 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
                     minimumSize: const Size(220, 45)),
                 onPressed: () {
                   ulozHru();
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop();
+                  Navigator.of(context).popUntil((route) => route.isFirst);
                 },
               ),
               const Padding(
@@ -3555,22 +3553,10 @@ class _SlovniSolitareState extends ConsumerState<SlovniSolitare>
   
 
                             onMenu: () {
-
-  
-
-                              // Pop twice: once for the end screen, once for the game screen
-
-  
-
-                              Navigator.of(context).pop();
-
-  
-
-                              Navigator.of(context).pop();
-
-  
-
+                              // Ensure we return to the first route (hlavní menu)
+                              Navigator.of(context).popUntil((route) => route.isFirst);
                             },
+
 
   
 

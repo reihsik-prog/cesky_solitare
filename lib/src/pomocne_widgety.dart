@@ -9,7 +9,13 @@ class MenuTlacitko extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        if (text == 'HLAVNÍ MENU') {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        } else {
+          onTap();
+        }
+      },
       child: Container(
         width: 220,
         padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
